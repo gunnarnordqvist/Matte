@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matteträning – Multiplikationstabellen</title>
+<style>
+  body { font-family: sans-serif; text-align: center; background: #f0f7ff; margin: 0; padding: 1em; }
+  h1 { color: #2a5d9f; }
+  .tables { display: flex; flex-wrap: wrap; justify-content: center; gap: .5em; max-width: 30em; margin: 1em auto; }
+  .tables label { background: #fff; border: 2px solid #2a5d9f; border-radius: .5em; padding: .6em 1em; font-size: 1.3em; cursor: pointer; }
+  .tables input:checked + span { font-weight: bold; color: #c0392b; }
+  button { font-size: 1.2em; padding: .5em 1.2em; border-radius: .5em; border: none; background: #2a5d9f; color: #fff; cursor: pointer; }
+  #error { color: #c0392b; min-height: 1.5em; }
+  #game { display: none; }
+  #circle { position: relative; width: min(90vw, 26em); height: min(90vw, 26em); margin: 1em auto; }
+  #question { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.2em; font-weight: bold; color: #2a5d9f; }
+  .opt { position: absolute; width: 3.6em; height: 3.6em; margin: -1.8em 0 0 -1.8em; border-radius: 50%; border: 2px solid #2a5d9f; background: #fff; font-size: 1.1em; cursor: pointer; padding: 0; color: #000; }
+  .opt.right { background: #7ddc7d; }
+  .opt.wrong { background: #f4a0a0; }
+  #score { font-size: 1.2em; }
+</style>
+</head>
+<body>
+<h1>Matteträning</h1>
+<div id="setup">
+  <p>Välj vilka multiplikationstabeller du vill träna på:</p>
+  <div class="tables" id="tables"></div>
+  <div id="error" role="alert"></div>
+  <button id="start">Starta</button>
+</div>
+<div id="game">
+  <p id="score"></p>
+  <div id="circle"><div id="question"></div></div>
+  <button id="back">Byt tabeller</button>
+</div>
+<script>
+const tablesEl = document.getElementById('tables');
+for (let t = 1; t <= 12; t++) {
+  const l = document.createElement('label');
+  l.innerHTML = '<input type="checkbox" value="' + t + '"> <span>' + t + '</span>';
+  tablesEl.appendChild(l);
+}
+let selected = [], correct = 0, total = 0, answer = 0, locked = false;
+const $ = id => document.getElementById(id);
+const rnd = n => Math.floor(Math.random() * n);
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+function nextQuestion() {
+  locked = false;
+  const t = selected[rnd(selected.length)], n = 1 + rnd(10);
+  answer = t * n;
+  $('question').textContent = t + ' × ' + n;
+  const opts = new Set([answer]);
+  // Distractors: neighbouring products in the same table, then nearby numbers
+  [-3, -2, -1, 1, 2, 3].forEach(d => { const v = t * (n + d); if (v > 0) opts.add(v); });
+  for (let k = 1; opts.size < 10; k++) { [answer + k, answer - k].forEach(v => { if (v > 0 && opts.size < 10) opts.add(v); }); }
+  const list = shuffle([...opts]);
+  document.querySelectorAll('.opt').forEach(b => b.remove());
+  list.forEach((v, i) => {
+    const ang = (2 * Math.PI * i) / 10 - Math.PI / 2;
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.textContent = v;
+    b.style.left = (50 + 40 * Math.cos(ang)) + '%';
+    b.style.top = (50 + 40 * Math.sin(ang)) + '%';
+    b.onclick = () => choose(b, v);
+    $('circle').appendChild(b);
+  });
+}
+
+function choose(btn, v) {
+  if (locked) return;
+  total++;
+  if (v === answer) {
+    locked = true; correct++;
+    btn.classList.add('right');
+    updateScore();
+    setTimeout(nextQuestion, 700);
+  } else {
+    btn.classList.add('wrong');
+    btn.disabled = true;
+    updateScore();
+  }
+}
+
+function updateScore() { $('score').textContent = 'Rätt: ' + correct + ' av ' + total + ' försök'; }
+
+$('start').onclick = () => {
+  selected = [...document.querySelectorAll('#tables input:checked')].map(i => +i.value);
+  if (!selected.length) { $('error').textContent = 'Välj minst en tabell!'; return; }
+  $('error').textContent = '';
+  correct = total = 0; updateScore();
+  $('setup').style.display = 'none'; $('game').style.display = 'block';
+  nextQuestion();
+};
+$('back').onclick = () => { $('game').style.display = 'none'; $('setup').style.display = 'block'; };
+</script>
+</body>
+</html>
