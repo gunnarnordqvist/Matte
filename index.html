@@ -53,6 +53,8 @@
   .card .icon { font-size: 4em; line-height: 1.1; }
   .card p { margin: .4em 0; color: var(--mid); }
   .card button { font-size: 1em; padding: .5em .6em; margin-top: .3em; }
+  .card .evo { color: var(--dark); }
+  .card .evo .track { display: block; height: .7em; margin-top: .3em; }
   #reset { background: none; border: none; color: #708070; text-decoration: underline; font-size: .55em; }
 
   /* Arena */
@@ -68,6 +70,7 @@
   #heroSprite.attack { animation: herolunge .4s; }
   .sprite.fainted { opacity: 0; transform: translateY(1em); }
   #heroSprite.fainted { transform: scaleX(-1) translateY(1em); }
+  .sprite.evolving { animation: evolve .5s ease-in-out 6; }
   .sprite.enter { animation: enter .6s ease-out; }
   #heroSprite.enter { animation: heroenter .6s ease-out; }
 
@@ -111,6 +114,7 @@
   @keyframes heroenter { from { transform: scaleX(-1) translateX(3em); opacity: 0; } }
   @keyframes throw { 0% { transform: translate(-7em, 4em) rotate(0); } 50% { transform: translate(-3em, -2em) rotate(360deg); } 100% { transform: translate(0, 0) rotate(720deg); } }
   @keyframes wobble { 25% { transform: rotate(-25deg); } 75% { transform: rotate(25deg); } }
+  @keyframes evolve { 50% { filter: brightness(0) invert(1); transform: scale(1.15); } }
   @keyframes pulse { 50% { box-shadow: 0 0 0 4px var(--light); } }
   @keyframes blink { 50% { opacity: 0; } }
   @keyframes flash { 30% { background: #fff; filter: invert(1); } }
@@ -176,14 +180,22 @@ const GOAL = 20, MAX_HP = 20, HOUR = 60 * 60 * 1000, SAVE_KEY = 'matte-tabellmon
 const ALL_TABLES = [6, 7, 8, 9, 12, 13];
 // One monster per table along the quest route; the dragon at the end uses every table
 const MONSTERS = [
-  { id: '6', tables: [6], name: 'SEXKRABBA', icon: '🦀', move: 'KLOKLIPP', lvl: 12, place: 'Sexstranden', desc: 'Går sidledes längs stranden och nyper den som räknar fel.' },
-  { id: '7', tables: [7], name: 'SJUSNOK', icon: '🐍', move: 'GIFTBETT', lvl: 17, place: 'Sjuskogen', desc: 'Slingrar sig genom sjuans tabell utan att göra ett ljud.' },
-  { id: '8', tables: [8], name: 'ÅTTABLÄCK', icon: '🐙', move: 'BLÄCKSPRUT', lvl: 22, place: 'Åttasjön', desc: 'Åtta armar – en för varje svar den vill sno åt sig.' },
-  { id: '9', tables: [9], name: 'NIOSVANS', icon: '🦊', move: 'RÄVELD', lvl: 27, place: 'Nioberget', desc: 'En listig räv med nio svansar. Lurar dig med nästan rätt svar.' },
-  { id: '12', tables: [12], name: 'TOLVTROLL', icon: '👹', move: 'KLUBBSLAG', lvl: 34, place: 'Tolvgrottan', desc: 'Kastar stenar ett dussin åt gången.' },
-  { id: '13', tables: [13], name: 'TRETTONSPÖKE', icon: '👻', move: 'SKRÄMSKRIK', lvl: 41, place: 'Trettonslottet', desc: 'Spökar i slottet – och värst är det fredag den trettonde.' },
+  { id: '6', tables: [6], name: 'SEXKRABBA', icon: '🦀', move: 'KLOKLIPP', lvl: 12, place: 'Sexstranden', desc: 'Går sidledes längs stranden och nyper den som räknar fel.',
+    evo: { name: 'SEXHUMMER', icon: '🦞', move: 'JÄTTEKLO', desc: 'Klorna har vuxit sig så stora att den kan knipa två svar på en gång.' } },
+  { id: '7', tables: [7], name: 'SJULARV', icon: '🐛', move: 'TRÅDSKOTT', lvl: 17, place: 'Sjuskogen', desc: 'Kryper runt i sjuans tabell och äter upp fel svar.',
+    evo: { name: 'SJUFJÄRIL', icon: '🦋', move: 'VINGVIND', desc: 'Har puppat sig och fladdrar nu över hela Sjuskogen.' } },
+  { id: '8', tables: [8], name: 'ÅTTABLÄCK', icon: '🐙', move: 'BLÄCKSPRUT', lvl: 22, place: 'Åttasjön', desc: 'Åtta armar – en för varje svar den vill sno åt sig.',
+    evo: { name: 'ÅTTAKRAKEN', icon: '🦑', move: 'VIRVELSTORM', desc: 'Härskar i djupet av Åttasjön. Blir starkare för varje åtta du räknar.' } },
+  { id: '9', tables: [9], name: 'NIOKATT', icon: '🐱', move: 'KLÖSATTACK', lvl: 27, place: 'Nioberget', desc: 'Har nio liv – och ett knep för varje.',
+    evo: { name: 'NIOTIGER', icon: '🐯', move: 'TIGERSPRÅNG', desc: 'Kissen har vuxit till en tiger som springer upp för Nioberget på nio sekunder.' } },
+  { id: '12', tables: [12], name: 'TOLVTROLL', icon: '👹', move: 'KLUBBSLAG', lvl: 34, place: 'Tolvgrottan', desc: 'Kastar stenar ett dussin åt gången.',
+    evo: { name: 'TOLVJÄTTE', icon: '👺', move: 'JORDSKALV', desc: 'Så stor att Tolvgrottan blivit för trång. Stampar fram tolv jordskalv.' } },
+  { id: '13', tables: [13], name: 'TRETTONSPÖKE', icon: '👻', move: 'SKRÄMSKRIK', lvl: 41, place: 'Trettonslottet', desc: 'Spökar i slottet – och värst är det fredag den trettonde.',
+    evo: { name: 'TRETTONVAMPYR', icon: '🧛', move: 'NATTFLADDER', desc: 'Vaknar vid midnatt och räknar till tretton innan den slår till.' } },
   { id: 'drake', tables: ALL_TABLES, name: 'TABELLDRAKE', icon: '🐉', move: 'ELDIG GÅNGER', lvl: 60, place: 'Drakens topp', desc: 'Den legendariska härskaren över alla tabeller.', boss: true },
 ];
+// Every win levels a caught monster up; after EVOLVE_AT wins it evolves into its next form
+const EVOLVE_AT = 3, LVL_PER_WIN = 3;
 const HERO_ATTACKS = ['GÅNGERSLAG', 'SIFFERSPARK', 'TABELLSTORM', 'PRODUKTBLIXT'];
 
 const $ = id => document.getElementById(id);
@@ -204,6 +216,11 @@ function saveState() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state
 const isCaught = m => !!state.caught[m.id];
 const caughtCount = () => MONSTERS.filter(isCaught).length;
 const isOpen = (m, i) => m.boss ? MONSTERS.every(o => o.boss || isCaught(o)) : i === 0 || isCaught(MONSTERS[i - 1]);
+const winsOf = m => state.caught[m.id] ? state.caught[m.id].wins : 0;
+const isEvolved = m => !!m.evo && winsOf(m) >= EVOLVE_AT;
+// Name, icon, move and description of the form the player owns
+const form = m => isEvolved(m) ? m.evo : m;
+const levelOf = m => m.lvl + Math.max(0, winsOf(m) - 1) * LVL_PER_WIN;
 const partner = () => state.partner && state.caught[state.partner] ? byId(state.partner) : null;
 
 let timer = null;
@@ -235,11 +252,12 @@ function renderMap() {
     if (open && !caught && !nextMarked) { b.classList.add('next'); nextMarked = true; }
     b.disabled = !open;
     const what = m.boss ? 'Alla tabeller' : 'Tabell ' + m.tables[0];
-    b.innerHTML = '<span class="icon' + (caught ? '' : ' sil') + '" aria-hidden="true">' + m.icon + '</span><span>'
+    const f = form(m);
+    b.innerHTML = '<span class="icon' + (caught ? '' : ' sil') + '" aria-hidden="true">' + f.icon + '</span><span>'
       + '<span class="place">' + m.place + '</span><br>' + what + '<br>'
-      + (caught ? m.name + '<br><span class="stars">' + starText(state.caught[m.id].stars) + '</span>' : open ? '???<br>Tryck för att slåss!' : '🔒 Låst')
+      + (caught ? f.name + ' :L' + levelOf(m) + '<br><span class="stars">' + starText(state.caught[m.id].stars) + '</span> Träna igen!' : open ? '???<br>Tryck för att slåss!' : '🔒 Låst')
       + '</span>';
-    b.setAttribute('aria-label', m.place + ', ' + what + (caught ? ', ' + m.name + ' fångad' : open ? ', okänt monster' : ', låst'));
+    b.setAttribute('aria-label', m.place + ', ' + what + (caught ? ', ' + f.name + ' fångad' : open ? ', okänt monster' : ', låst'));
     b.onclick = () => startFight(m);
     path.appendChild(b);
   });
@@ -250,7 +268,7 @@ function renderMap() {
 function renderDex() {
   const p = partner();
   $('dexText').textContent = 'MONSTERDEX: ' + caughtCount() + ' av ' + MONSTERS.length + ' fångade. '
-    + (p ? 'Din partner är ' + p.name + '.' : 'Fånga ett monster så blir det din partner i striderna!');
+    + (p ? 'Din partner är ' + form(p).name + '. Varje vinst ger nivåer – efter ' + EVOLVE_AT + ' vinster utvecklas monstret!' : 'Fånga ett monster så blir det din partner i striderna!');
   const grid = $('dexGrid');
   grid.innerHTML = '';
   MONSTERS.forEach((m, i) => {
@@ -258,9 +276,16 @@ function renderDex() {
     const card = document.createElement('div');
     card.className = 'card' + (c ? ' caught' : '') + (p === m ? ' partner' : '');
     const what = m.boss ? 'Alla tabeller' : 'Tabell ' + m.tables[0];
-    card.innerHTML = '<div class="icon' + (c ? '' : ' sil') + '" aria-hidden="true">' + m.icon + '</div>'
-      + '<b>#' + (i + 1) + ' ' + (c ? m.name : '???') + '</b><br>' + what
-      + (c ? '<br><span class="stars">' + starText(c.stars) + '</span><p>' + m.desc + '</p>Besegrad ' + c.wins + ' ' + (c.wins === 1 ? 'gång' : 'gånger') + '<br>'
+    const f = form(m);
+    let growth = '';
+    if (c && m.evo && !isEvolved(m)) {
+      const left = EVOLVE_AT - c.wins;
+      growth = '<p class="evo"><span class="sil" aria-hidden="true">' + m.evo.icon + '</span> Utvecklas om ' + left + ' ' + (left === 1 ? 'vinst' : 'vinster')
+        + '<span class="track"><span class="fill" style="width:' + (100 * c.wins / EVOLVE_AT) + '%"></span></span></p>';
+    } else if (c) growth = '<p class="evo">' + (m.boss ? 'Legendarisk!' : 'Fullt utvecklad!') + '</p>';
+    card.innerHTML = '<div class="icon' + (c ? '' : ' sil') + '" aria-hidden="true">' + f.icon + '</div>'
+      + '<b>#' + (i + 1) + ' ' + (c ? f.name : '???') + '</b><br>' + what + (c ? ' · :L' + levelOf(m) : '')
+      + (c ? '<br><span class="stars">' + starText(c.stars) + '</span><p>' + f.desc + '</p>Besegrad ' + c.wins + ' ' + (c.wins === 1 ? 'gång' : 'gånger') + growth
            : '<p>Bor vid ' + m.place + '.</p>');
     if (c) {
       const b = document.createElement('button');
@@ -333,10 +358,11 @@ function startFight(m) {
   $('bossName').textContent = m.name;
   $('bossLvl').textContent = ':L' + m.lvl;
   $('bossSprite').textContent = m.icon;
-  $('heroSprite').textContent = p ? p.icon : '🧒';
-  $('heroName').textContent = p ? p.name : 'DU';
-  $('heroLvl').textContent = ':L' + (p ? p.lvl : 10);
-  $('bossSprite').classList.remove('fainted'); $('heroSprite').classList.remove('fainted');
+  const pf = p && form(p);
+  $('heroSprite').textContent = p ? pf.icon : '🧒';
+  $('heroName').textContent = p ? pf.name : 'DU';
+  $('heroLvl').textContent = ':L' + (p ? levelOf(p) : 10);
+  $('bossSprite').classList.remove('fainted', 'evolving'); $('heroSprite').classList.remove('fainted');
   $('ball').className = '';
   $('overlay').style.display = 'none'; $('flee').style.display = '';
   updateBars();
@@ -348,7 +374,7 @@ function startFight(m) {
     : 'En vild ' + m.name + ' dyker upp vid ' + m.place + '!');
   waitThen(() => {
     if (!p) { nextQuestion(); return; }
-    say('Kör, ' + p.name + '!');
+    say('Kör, ' + pf.name + '!');
     animate($('heroSprite'), 'enter');
     waitThen(nextQuestion, 2500);
   }, 4000);
@@ -384,7 +410,7 @@ function choose(btn, v) {
     bossHp--;
     const p = partner();
     $('question').textContent = '';
-    say((p ? p.name : 'DU') + ' använder ' + (p ? p.move : pick(HERO_ATTACKS)) + '! ' + question + ' = ' + answer + '. Det är supereffektivt!');
+    say((p ? form(p).name : 'DU') + ' använder ' + (p ? form(p).move : pick(HERO_ATTACKS)) + '! ' + question + ' = ' + answer + '. Det är supereffektivt!');
     animate($('heroSprite'), 'attack');
     later(() => { animate($('bossSprite'), 'hit'); updateBars(); }, 300);
     if (bossHp <= 0) {
@@ -405,38 +431,65 @@ function choose(btn, v) {
         $('heroSprite').classList.add('fainted');
         $('question').textContent = '';
         $('menu').innerHTML = '';
-        say((p ? p.name + ' orkar inte mer!' : 'Du svimmade!') + ' ' + foe.name + ' vann den här gången... Öva och försök igen!');
+        say((p ? form(p).name + ' orkar inte mer!' : 'Du svimmade!') + ' ' + foe.name + ' vann den här gången... Öva och försök igen!');
         $('overlay').style.display = 'flex'; $('flee').style.display = 'none';
       }, 1200);
     } else later(() => { locked = false; }, 700);
   }
 }
 
-// Record the win, throw the Matteboll at new monsters, then hand out the reward
+// Play messages one after another; each step returns how long to wait before moving on
+function sequence(steps, done) {
+  const step = steps.shift();
+  if (!step) { done(); return; }
+  waitThen(() => sequence(steps, done), step());
+}
+
+// Record the win, then: throw the Matteboll at new monsters, give stars, level up and maybe evolve
 function win() {
   const m = foe, stars = starsFor(errors), old = state.caught[m.id];
   const firstCatch = !old, firstPartner = !partner();
+  const before = old && form(m);
   state.caught[m.id] = { stars: Math.max(stars, old ? old.stars : 0), wins: (old ? old.wins : 0) + 1 };
   if (firstPartner) state.partner = m.id;
   saveState();
-  const rating = 'Betyg: ' + starText(stars) + ' (' + errors + ' fel)' + (old && stars > old.stars ? ' – nytt rekord!' : '.');
-  const after = () => {
-    say(rating);
-    waitThen(() => {
-      if (firstPartner) { say(m.name + ' gillar dig! Den blir din partner i nästa strid.'); waitThen(() => startReward(m, firstCatch), 5000); }
-      else startReward(m, firstCatch);
-    }, 5000);
-  };
-  if (!firstCatch) { say('Du besegrade ' + m.name + ' igen!'); waitThen(after, 4000); return; }
-  say('Du kastar en MATTEBOLL!');
-  $('ball').className = 'throw';
-  later(() => { $('ball').className = 'done'; say('Hurra! ' + m.name + ' fångades! Den finns nu i din Monsterdex.'); waitThen(after, 5000); }, 2500);
+  const evolved = old && isEvolved(m) && before !== form(m);
+  const sprite = $('bossSprite'), steps = [];
+  if (firstCatch) {
+    steps.push(() => { say('Du kastar en MATTEBOLL!'); $('ball').className = 'throw'; return 2500; });
+    steps.push(() => { $('ball').className = 'done'; say('Hurra! ' + m.name + ' fångades! Den finns nu i din Monsterdex.'); return 5000; });
+  } else {
+    steps.push(() => { say('Du besegrade ' + m.name + ' igen! Bra tränat!'); return 4000; });
+  }
+  steps.push(() => { say('Betyg: ' + starText(stars) + ' (' + errors + ' fel)' + (old && stars > old.stars ? ' – nytt rekord!' : '.')); return 5000; });
+  if (old) steps.push(() => {
+    const left = EVOLVE_AT - winsOf(m);
+    say(before.name + ' gick upp till nivå ' + levelOf(m) + '!' + (m.evo && left > 0 ? ' Den känns starkare... ' + left + ' ' + (left === 1 ? 'vinst' : 'vinster') + ' till!' : ''));
+    return 5000;
+  });
+  if (evolved) {
+    steps.push(() => {
+      $('ball').className = '';
+      sprite.textContent = before.icon; sprite.classList.remove('fainted'); sprite.classList.add('evolving');
+      say('Vad händer? ' + before.name + ' utvecklas!');
+      return 3200;
+    });
+    steps.push(() => {
+      sprite.classList.remove('evolving'); sprite.textContent = m.evo.icon; animate($('arena'), 'flash');
+      say('Grattis! ' + before.name + ' utvecklades till ' + m.evo.name + '! Den lärde sig ' + m.evo.move + '!');
+      return 6000;
+    });
+  }
+  if (firstPartner) steps.push(() => { say(m.name + ' gillar dig! Den blir din partner i nästa strid.'); return 5000; });
+  sequence(steps, () => startReward(m, firstCatch, evolved));
 }
 
-function startReward(m, firstCatch) {
+function startReward(m, firstCatch, evolved) {
   stopFight();
-  $('rewardIcon').textContent = m.icon;
-  $('rewardTitle').textContent = m.boss ? '🏆 Du är Tabellmästare!' : firstCatch ? '🏆 Du fångade ' + m.name + '!' : '🏆 Du besegrade ' + m.name + '!';
+  $('rewardIcon').textContent = form(m).icon;
+  $('rewardTitle').textContent = evolved ? '🏆 ' + m.name + ' utvecklades till ' + m.evo.name + '!'
+    : firstCatch ? (m.boss ? '🏆 Du är Tabellmästare!' : '🏆 Du fångade ' + m.name + '!')
+    : '🏆 ' + form(m).name + ' nådde nivå ' + levelOf(m) + '!';
   const end = Date.now() + HOUR;
   show('reward');
   const tick = () => {
