@@ -1,10 +1,10 @@
 # Matte
-## Matteträning – Tabellmonster
-Öppna `index.html` (eller publicera via GitHub Pages: Settings → Pages → branch, root). Ett quest i stil med de gamla Pokémon-spelen där man tränar multiplikationstabellerna.
+## Times Tables – Table Monsters
+Open `index.html` (or publish it with GitHub Pages: Settings → Pages → branch, root). A quest in the style of the classic Pokémon games for practising the times tables.
 
-* Kartan över Gångerlandet har ett monster per tabell: SEXKRABBA (6), SJULARV (7), ÅTTABLÄCK (8), NIOKATT (9), TOLVTROLL (12) och TRETTONSPÖKE (13). Nästa plats låses upp när föregående monster är fånget. Sist väntar TABELLDRAKEN som blandar alla tabeller.
-* Varje rätt svar skadar monstret – 20 rätt besegrar det. Varje fel svar skadar dig – svarar du fel 20 gånger förlorar du och får försöka igen.
-* Besegrade monster fångas i en Matteboll och hamnar i Monsterdexen, med 1–3 stjärnor beroende på antal fel. Ett fångat monster kan väljas som partner som slåss åt dig.
-* Man kan träna samma tabell igen: varje ny vinst ger monstret fler nivåer, en chans till fler stjärnor, och efter 3 vinster utvecklas det till en ny form (t.ex. SEXKRABBA → SEXHUMMER).
-* Varje vunnen strid ger en timmes belöningstid.
-* Framstegen sparas i webbläsaren (localStorage) och kan nollställas i Monsterdexen.
+* The map of Timesland has one monster per table: SIXCRAB (6), SEVENPILLAR (7), OCTOINK (8), NINELIVES (9), DOZENTROLL (12) and SPOOKTEEN (13). The next place unlocks once the previous monster has been caught. At the end, the TIMESDRAGON mixes all the tables.
+* Every correct answer damages the monster – 20 correct answers beat it. Every wrong answer damages you – after 20 wrong answers you faint and can try again.
+* Beaten monsters are caught in a Maths Ball and added to the Monsterdex, rated 1–3 stars depending on the number of mistakes. A caught monster can be chosen as the partner that battles for you.
+* You can practise the same table again: every new win gives the monster more levels and another chance at more stars, and after 3 wins it evolves into a new form (e.g. SIXCRAB → SIXLOBSTER).
+* Every battle won gives one hour of reward time.
+* Progress is saved in the browser (localStorage) and can be reset from the Monsterdex.
