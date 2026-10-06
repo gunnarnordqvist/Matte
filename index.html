@@ -14,7 +14,8 @@
   h1 { color: var(--light); font-size: 1.3em; margin: .3em 0 .8em; }
   .screen { max-width: 34em; margin: 0 auto; background: var(--pale); border: 4px solid var(--dark); border-radius: .4em; box-shadow: 0 0 0 4px var(--pale), 0 0 0 8px var(--dark); padding: 1em; }
   button { font-family: inherit; font-size: .8em; padding: .8em 1.2em; border: 3px solid var(--dark); border-radius: .3em; background: #fff; color: var(--dark); cursor: pointer; }
-  button:hover:not(:disabled), button:focus-visible { background: var(--light); outline: none; }
+  button:focus-visible { background: var(--light); outline: none; }
+  @media (hover: hover) { button:hover:not(:disabled) { background: var(--light); } }
   .small { font-size: .65em; margin-top: 1em; }
   .tables { display: flex; flex-wrap: wrap; justify-content: center; gap: .6em; margin: 1.2em auto; }
   .tables label { background: #fff; border: 3px solid var(--dark); border-radius: .3em; padding: .7em 1em; cursor: pointer; }
@@ -50,12 +51,16 @@
   .hpnum { text-align: right; margin-top: .3em; }
 
   /* Text box & menu */
-  #textbox { margin-top: .8em; min-height: 5.2em; background: #fff; border: 3px solid var(--dark); border-radius: .3em; box-shadow: inset 0 0 0 3px var(--pale), inset 0 0 0 5px var(--mid); padding: 1em; text-align: left; font-size: .75em; }
+  #textbox { margin-top: .8em; min-height: 5.2em; background: #fff; border: 3px solid var(--dark); border-radius: .3em; box-shadow: inset 0 0 0 3px var(--pale), inset 0 0 0 5px var(--mid); padding: 1em; text-align: left; font-size: .75em; position: relative; }
+  #textbox.wait { cursor: pointer; }
+  #next { display: none; position: absolute; right: .8em; bottom: .5em; animation: blink .8s steps(1) infinite; }
+  #textbox.wait #next { display: block; }
   #question { font-size: 1.4em; color: var(--dark); }
   #menu { display: grid; grid-template-columns: repeat(5, 1fr); gap: .4em; margin-top: .8em; }
   .opt { position: relative; padding: .9em 0; font-size: .85em; }
-  .opt:hover:not(:disabled)::before, .opt:focus-visible::before { content: '▶'; position: absolute; left: .2em; font-size: .7em; top: 50%; transform: translateY(-50%); }
-  .opt.right, .opt.right:hover { background: var(--hp-ok); color: #fff; }
+  .opt:focus-visible::before { content: '▶'; position: absolute; left: .2em; font-size: .7em; top: 50%; transform: translateY(-50%); }
+  @media (hover: hover) { .opt:hover:not(:disabled)::before { content: '▶'; position: absolute; left: .2em; font-size: .7em; top: 50%; transform: translateY(-50%); } }
+  .opt.right, .opt.right:disabled { background: var(--hp-ok); color: #fff; }
   .opt.wrong { background: var(--hp-low); color: #fff; text-decoration: line-through; }
   .opt:disabled { cursor: default; }
   #overlay { display: none; margin-top: .8em; }
@@ -65,6 +70,7 @@
   @keyframes herohit { 0%, 100% { transform: scaleX(-1); opacity: 1; } 15%, 45%, 75% { opacity: 0; } 20% { transform: scaleX(-1) translateX(-.15em); } 40% { transform: scaleX(-1) translateX(.15em); } }
   @keyframes lunge { 50% { transform: translate(-.4em, .3em); } }
   @keyframes herolunge { 50% { transform: scaleX(-1) translate(-.4em, -.3em); } }
+  @keyframes blink { 50% { opacity: 0; } }
   @keyframes flash { 30% { background: #fff; filter: invert(1); } }
   @media (max-width: 30em) {
     body { padding: .5em; font-size: 14px; }
@@ -100,7 +106,7 @@
         <div class="hpnum" id="heroHpNum"></div>
       </div>
     </div>
-    <div id="textbox" aria-live="polite"><div id="message"></div><div id="question"></div></div>
+    <div id="textbox" aria-live="polite"><div id="message"></div><div id="question"></div><span id="next" aria-hidden="true">▼</span></div>
     <div id="menu"></div>
     <div id="overlay"><button id="retry">▶ Försök igen</button></div>
     <button id="back" class="small">Byt tabeller</button>
@@ -164,8 +170,22 @@ function animate(el, cls) {
 
 function say(msg) { $('message').textContent = msg; }
 
+// Show ▼ and continue when the text box is tapped / a key is pressed, or after ms
+let pending = null;
+function waitThen(fn, ms) {
+  const run = () => {
+    if (pending !== run) return;
+    pending = null; $('textbox').classList.remove('wait');
+    fn();
+  };
+  pending = run;
+  $('textbox').classList.add('wait');
+  later(run, ms);
+}
+function skip() { if (pending) pending(); }
+
 function startFight() {
-  fightId++;
+  fightId++; pending = null; $('textbox').classList.remove('wait');
   boss = pick(BOSSES);
   bossHp = GOAL; heroHp = MAX_HP;
   $('bossName').textContent = boss.name;
@@ -176,7 +196,7 @@ function startFight() {
   $('menu').innerHTML = ''; $('question').textContent = '';
   say('En vild ' + boss.name + ' dyker upp!');
   locked = true;
-  later(nextQuestion, 1400);
+  waitThen(nextQuestion, 4000);
 }
 
 function nextQuestion() {
@@ -205,6 +225,7 @@ function choose(btn, v) {
   locked = true;
   if (v === answer) {
     btn.classList.add('right');
+    document.querySelectorAll('.opt').forEach(b => b.disabled = true);
     bossHp--;
     $('question').textContent = '';
     say('DU använder ' + pick(ATTACKS) + '! ' + question + ' = ' + answer + '. Det är supereffektivt!');
@@ -212,13 +233,13 @@ function choose(btn, v) {
     later(() => { animate($('bossSprite'), 'hit'); updateBars(); }, 300);
     if (bossHp <= 0) {
       later(() => { $('bossSprite').classList.add('fainted'); say(boss.name + ' svimmade! Du vann!'); }, 1400);
-      later(startReward, 3200);
-    } else later(nextQuestion, 1600);
+      later(() => waitThen(startReward, 6000), 1500);
+    } else later(() => waitThen(nextQuestion, 5000), 600);
   } else {
     btn.classList.add('wrong');
     btn.disabled = true;
     heroHp--;
-    say('Fel! ' + boss.name + ' använder ' + boss.move + '!');
+    say('Fel! ' + boss.name + ' använder ' + boss.move + '! Försök igen:');
     animate($('bossSprite'), 'attack');
     later(() => { animate($('heroSprite'), 'hit'); animate($('arena'), 'flash'); updateBars(); }, 300);
     if (heroHp <= 0) {
@@ -229,7 +250,7 @@ function choose(btn, v) {
         $('menu').innerHTML = '';
         $('overlay').style.display = 'block';
       }, 1200);
-    } else later(() => { locked = false; say('Försök igen! Vad blir'); }, 1100);
+    } else later(() => { locked = false; }, 700);
   }
 }
 
@@ -258,9 +279,11 @@ $('start').onclick = () => {
   startFight();
 };
 $('retry').onclick = startFight;
+$('textbox').onclick = skip;
+document.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { if (pending) { e.preventDefault(); skip(); } } });
 $('back').onclick = $('back2').onclick = () => {
   if (timer) { clearInterval(timer); timer = null; }
-  locked = true; fightId++;
+  locked = true; fightId++; pending = null;
   $('reward').style.display = 'none'; $('game').style.display = 'none'; $('setup').style.display = 'block';
 };
 </script>
