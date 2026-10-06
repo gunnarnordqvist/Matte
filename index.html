@@ -3,25 +3,59 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Matteträning – Bossfight</title>
+<title>Matteträning – Tabellmonster</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
 <style>
-  :root { --dark: #0f380f; --mid: #306230; --light: #8bac0f; --pale: #e8f0d0; --hp-ok: #38b048; --hp-mid: #f0c020; --hp-low: #e03828; }
+  :root { --dark: #0f380f; --mid: #306230; --light: #8bac0f; --pale: #e8f0d0; --hp-ok: #38b048; --hp-mid: #f0c020; --hp-low: #e03828; --gold: #d89000; }
   * { box-sizing: border-box; }
-  body { font-family: 'Press Start 2P', ui-monospace, monospace; background: #20242a; color: var(--dark); margin: 0; padding: 1em; text-align: center; line-height: 1.5; }
-  h1 { color: var(--light); font-size: 1.3em; margin: .3em 0 .8em; }
+  body { font-family: 'Pixelify Sans', ui-monospace, monospace; font-weight: 500; font-size: 22px; background: #20242a; color: var(--dark); margin: 0; padding: 1em; text-align: center; line-height: 1.5; }
+  h1 { color: var(--light); font-size: 1.6em; font-weight: 700; margin: .3em 0 .8em; }
   .screen { max-width: 34em; margin: 0 auto; background: var(--pale); border: 4px solid var(--dark); border-radius: .4em; box-shadow: 0 0 0 4px var(--pale), 0 0 0 8px var(--dark); padding: 1em; }
   button { font-family: inherit; font-size: .8em; padding: .8em 1.2em; border: 3px solid var(--dark); border-radius: .3em; background: #fff; color: var(--dark); cursor: pointer; }
-  button:hover:not(:disabled), button:focus-visible { background: var(--light); outline: none; }
+  button:focus-visible { background: var(--light); outline: none; }
+  @media (hover: hover) { button:hover:not(:disabled) { background: var(--light); } }
   .small { font-size: .65em; margin-top: 1em; }
-  .tables { display: flex; flex-wrap: wrap; justify-content: center; gap: .6em; margin: 1.2em auto; }
-  .tables label { background: #fff; border: 3px solid var(--dark); border-radius: .3em; padding: .7em 1em; cursor: pointer; }
-  .tables input { accent-color: var(--mid); }
-  .tables input:checked + span { color: var(--hp-low); }
-  #error { color: var(--hp-low); min-height: 1.5em; font-size: .7em; }
-  #game, #reward { display: none; }
+  .view { display: none; }
+  .view.on { display: block; }
+  .stars { color: var(--gold); letter-spacing: .1em; }
+  .sil { filter: brightness(0); opacity: .75; }
+
+  /* Text boxes */
+  .textbox { min-height: 5.2em; background: #fff; border: 3px solid var(--dark); border-radius: .3em; box-shadow: inset 0 0 0 3px var(--pale), inset 0 0 0 5px var(--mid); padding: .9em 1em; text-align: left; font-size: .9em; position: relative; }
+  #textbox { margin-top: .8em; }
+  #textbox.wait { cursor: pointer; }
+  #next { display: none; position: absolute; right: .8em; bottom: .5em; animation: blink .8s steps(1) infinite; }
+  #textbox.wait #next { display: block; }
+  #professor { display: flex; gap: .8em; align-items: center; margin-bottom: 1em; }
+  #professor .face { font-size: 2.4em; line-height: 1; }
+
+  /* Quest map */
+  #path { position: relative; display: flex; flex-direction: column; gap: .7em; padding: .4em 0; }
+  #path::before { content: ''; position: absolute; left: 50%; top: 1.5em; bottom: 1.5em; border-left: 4px dashed var(--mid); }
+  .node { position: relative; z-index: 1; width: 80%; display: flex; align-items: center; gap: .7em; text-align: left; padding: .6em .7em; font-size: .78em; line-height: 1.5; }
+  .node:nth-child(odd) { align-self: flex-start; }
+  .node:nth-child(even) { align-self: flex-end; }
+  .node .icon { font-size: 3em; line-height: 1; min-width: 1.2em; text-align: center; }
+  .node.locked { background: #d8dcc8; color: #607060; border-style: dashed; cursor: not-allowed; }
+  .node.locked .icon { opacity: .35; }
+  .node.next { animation: pulse 1.2s ease-in-out infinite; }
+  .node.caught { border-color: var(--gold); }
+  .node.boss { border-width: 4px; }
+  .place { font-size: .85em; color: var(--mid); }
+
+  /* Monsterdex */
+  #dexGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(8em, 1fr)); gap: .6em; margin: 1em 0; }
+  .card { background: #fff; border: 3px solid var(--dark); border-radius: .3em; padding: .7em .5em; font-size: .7em; line-height: 1.5; }
+  .card.caught { border-color: var(--gold); }
+  .card.partner { box-shadow: 0 0 0 3px var(--gold); }
+  .card .icon { font-size: 4em; line-height: 1.1; }
+  .card p { margin: .4em 0; color: var(--mid); }
+  .card button { font-size: 1em; padding: .5em .6em; margin-top: .3em; }
+  .card .evo { color: var(--dark); }
+  .card .evo .track { display: block; height: .7em; margin-top: .3em; }
+  #reset { background: none; border: none; color: #708070; text-decoration: underline; font-size: .55em; }
 
   /* Arena */
   #arena { position: relative; height: 16em; background: linear-gradient(#f8f8e8 0 55%, #d8e8a8 55%); border: 3px solid var(--dark); border-radius: .3em; overflow: hidden; }
@@ -36,8 +70,18 @@
   #heroSprite.attack { animation: herolunge .4s; }
   .sprite.fainted { opacity: 0; transform: translateY(1em); }
   #heroSprite.fainted { transform: scaleX(-1) translateY(1em); }
+  .sprite.evolving { animation: evolve .5s ease-in-out 6; }
+  .sprite.enter { animation: enter .6s ease-out; }
+  #heroSprite.enter { animation: heroenter .6s ease-out; }
 
-  .info { position: absolute; width: 52%; background: #fff; border: 3px solid var(--dark); border-radius: .3em .3em .3em 1em; padding: .4em .6em; text-align: left; font-size: .6em; }
+  /* Matteboll */
+  #ball { display: none; position: absolute; right: 15%; top: 26%; font-size: 2.4em; width: 1em; height: 1em; border-radius: 50%; border: .08em solid var(--dark); background: linear-gradient(var(--hp-low) 0 44%, var(--dark) 44% 56%, #fff 56%); }
+  #ball::after { content: ''; position: absolute; left: 50%; top: 50%; width: .32em; height: .32em; transform: translate(-50%, -50%); border-radius: 50%; background: #fff; border: .07em solid var(--dark); }
+  #ball.throw { display: block; animation: throw .7s ease-out, wobble .5s ease-in-out .9s 3; }
+  #ball.done { display: block; }
+  #ball.done::after { background: var(--hp-mid); }
+
+  .info { position: absolute; width: 52%; background: #fff; border: 3px solid var(--dark); border-radius: .3em .3em .3em 1em; padding: .4em .6em; text-align: left; font-size: .72em; }
   #bossInfo { left: 3%; top: 6%; }
   #heroInfo { right: 3%; bottom: 8%; border-radius: .3em .3em 1em .3em; }
   .name { display: flex; justify-content: space-between; gap: .5em; white-space: nowrap; overflow: hidden; }
@@ -49,92 +93,215 @@
   .fill.low { background: var(--hp-low); }
   .hpnum { text-align: right; margin-top: .3em; }
 
-  /* Text box & menu */
-  #textbox { margin-top: .8em; min-height: 5.2em; background: #fff; border: 3px solid var(--dark); border-radius: .3em; box-shadow: inset 0 0 0 3px var(--pale), inset 0 0 0 5px var(--mid); padding: 1em; text-align: left; font-size: .75em; }
+  /* Answer menu */
   #question { font-size: 1.4em; color: var(--dark); }
   #menu { display: grid; grid-template-columns: repeat(5, 1fr); gap: .4em; margin-top: .8em; }
   .opt { position: relative; padding: .9em 0; font-size: .85em; }
-  .opt:hover:not(:disabled)::before, .opt:focus-visible::before { content: '▶'; position: absolute; left: .2em; font-size: .7em; top: 50%; transform: translateY(-50%); }
-  .opt.right, .opt.right:hover { background: var(--hp-ok); color: #fff; }
+  .opt:focus-visible::before { content: '▶'; position: absolute; left: .2em; font-size: .7em; top: 50%; transform: translateY(-50%); }
+  @media (hover: hover) { .opt:hover:not(:disabled)::before { content: '▶'; position: absolute; left: .2em; font-size: .7em; top: 50%; transform: translateY(-50%); } }
+  .opt.right, .opt.right:disabled { background: var(--hp-ok); color: #fff; }
   .opt.wrong { background: var(--hp-low); color: #fff; text-decoration: line-through; }
   .opt:disabled { cursor: default; }
-  #overlay { display: none; margin-top: .8em; }
+  #overlay { display: none; margin-top: .8em; gap: .6em; justify-content: center; flex-wrap: wrap; }
   #clock { font-size: 1.6em; margin: .6em 0; color: var(--mid); }
+  #rewardIcon { font-size: 4em; line-height: 1.2; }
 
   @keyframes hit { 0%, 100% { transform: translateX(0); opacity: 1; } 15%, 45%, 75% { opacity: 0; } 20% { transform: translateX(-.15em); } 40% { transform: translateX(.15em); } 60% { transform: translateX(-.1em); } }
   @keyframes herohit { 0%, 100% { transform: scaleX(-1); opacity: 1; } 15%, 45%, 75% { opacity: 0; } 20% { transform: scaleX(-1) translateX(-.15em); } 40% { transform: scaleX(-1) translateX(.15em); } }
   @keyframes lunge { 50% { transform: translate(-.4em, .3em); } }
   @keyframes herolunge { 50% { transform: scaleX(-1) translate(-.4em, -.3em); } }
+  @keyframes enter { from { transform: translateX(3em); opacity: 0; } }
+  @keyframes heroenter { from { transform: scaleX(-1) translateX(3em); opacity: 0; } }
+  @keyframes throw { 0% { transform: translate(-7em, 4em) rotate(0); } 50% { transform: translate(-3em, -2em) rotate(360deg); } 100% { transform: translate(0, 0) rotate(720deg); } }
+  @keyframes wobble { 25% { transform: rotate(-25deg); } 75% { transform: rotate(25deg); } }
+  @keyframes evolve { 50% { filter: brightness(0) invert(1); transform: scale(1.15); } }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 4px var(--light); } }
+  @keyframes blink { 50% { opacity: 0; } }
   @keyframes flash { 30% { background: #fff; filter: invert(1); } }
   @media (max-width: 30em) {
-    body { padding: .5em; font-size: 14px; }
+    body { padding: .5em; font-size: 19px; }
     .screen { padding: .6em; }
-    #menu { grid-template-columns: repeat(5, 1fr); gap: .3em; }
+    #menu { gap: .3em; }
     .opt { font-size: .75em; }
     .sprite { font-size: 3.6em; }
+    .node { width: 88%; }
   }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
-<h1>⚔ Matte-Bossfight ⚔</h1>
+<h1>⚔ Tabellmonster ⚔</h1>
 <div class="screen">
-  <div id="setup">
-    <p style="font-size:.8em">Välj vilka multiplikationstabeller du vill slåss med:</p>
-    <div class="tables" id="tables"></div>
-    <div id="error" role="alert"></div>
-    <button id="start">▶ Starta striden</button>
+  <div id="map" class="view on">
+    <div class="textbox" id="professor"><span class="face" aria-hidden="true">👴</span><span id="profText"></span></div>
+    <div id="path"></div>
+    <button id="openDex" class="small">📖 Monsterdex</button>
   </div>
 
-  <div id="game">
+  <div id="dex" class="view">
+    <div class="textbox" id="dexText"></div>
+    <div id="dexGrid"></div>
+    <button id="closeDex">◀ Till kartan</button>
+    <p><button id="reset">Börja om från början</button></p>
+  </div>
+
+  <div id="game" class="view">
     <div id="arena">
       <div class="info" id="bossInfo">
-        <div class="name"><span id="bossName"></span><span>:L50</span></div>
+        <div class="name"><span id="bossName"></span><span id="bossLvl"></span></div>
         <div class="bar"><b>HP</b><div class="track"><div class="fill" id="bossHp"></div></div></div>
       </div>
       <div class="sprite" id="bossSprite" aria-hidden="true"></div>
-      <div class="sprite" id="heroSprite" aria-hidden="true">🧒</div>
+      <div id="ball" aria-hidden="true"></div>
+      <div class="sprite" id="heroSprite" aria-hidden="true"></div>
       <div class="info" id="heroInfo">
-        <div class="name"><span>DU</span><span>:L10</span></div>
+        <div class="name"><span id="heroName"></span><span id="heroLvl"></span></div>
         <div class="bar"><b>HP</b><div class="track"><div class="fill" id="heroHp"></div></div></div>
         <div class="hpnum" id="heroHpNum"></div>
       </div>
     </div>
-    <div id="textbox" aria-live="polite"><div id="message"></div><div id="question"></div></div>
+    <div class="textbox" id="textbox" aria-live="polite"><div id="message"></div><div id="question"></div><span id="next" aria-hidden="true">▼</span></div>
     <div id="menu"></div>
-    <div id="overlay"><button id="retry">▶ Försök igen</button></div>
-    <button id="back" class="small">Byt tabeller</button>
+    <div id="overlay"><button id="retry">▶ Försök igen</button><button id="giveUp">Till kartan</button></div>
+    <button id="flee" class="small">🏃 Fly till kartan</button>
   </div>
 
-  <div id="reward">
-    <h2 style="font-size:1em">🏆 Du besegrade bossen!</h2>
+  <div id="reward" class="view">
+    <div id="rewardIcon" aria-hidden="true"></div>
+    <h2 id="rewardTitle" style="font-size:1em"></h2>
     <p style="font-size:.7em">Tid kvar av belöningen:</p>
     <div id="clock"></div>
-    <button id="back2" class="small">Byt tabeller</button>
+    <button id="rewardBack" class="small">◀ Till kartan</button>
   </div>
 </div>
 <script>
-const tablesEl = document.getElementById('tables');
-[6, 7, 8, 9, 12, 13].forEach(t => {
-  const l = document.createElement('label');
-  l.innerHTML = '<input type="checkbox" value="' + t + '"> <span>' + t + '</span>';
-  tablesEl.appendChild(l);
-});
-// Boss has GOAL HP (one per correct answer), you have MAX_HP (one per wrong answer)
-const GOAL = 20, MAX_HP = 20, HOUR = 60 * 60 * 1000;
-const BOSSES = [
-  { name: 'TABELLDRAKE', icon: '🐉', move: 'ELDIG GÅNGER' },
-  { name: 'SIFFERTROLL', icon: '👹', move: 'KLUBBSLAG' },
-  { name: 'RÄKNEGAST', icon: '👻', move: 'SKRÄMSKRIK' },
-  { name: 'MATTEROBOT', icon: '🤖', move: 'LASERSTRÅLE' },
-  { name: 'PRODUKTORM', icon: '🐍', move: 'GIFTBETT' },
+// Monster wins after GOAL correct answers (its HP), you lose after MAX_HP wrong answers
+const GOAL = 20, MAX_HP = 20, HOUR = 60 * 60 * 1000, SAVE_KEY = 'matte-tabellmonster';
+const ALL_TABLES = [6, 7, 8, 9, 12, 13];
+// One monster per table along the quest route; the dragon at the end uses every table
+const MONSTERS = [
+  { id: '6', tables: [6], name: 'SEXKRABBA', icon: '🦀', move: 'KLOKLIPP', lvl: 12, place: 'Sexstranden', desc: 'Går sidledes längs stranden och nyper den som räknar fel.',
+    evo: { name: 'SEXHUMMER', icon: '🦞', move: 'JÄTTEKLO', desc: 'Klorna har vuxit sig så stora att den kan knipa två svar på en gång.' } },
+  { id: '7', tables: [7], name: 'SJULARV', icon: '🐛', move: 'TRÅDSKOTT', lvl: 17, place: 'Sjuskogen', desc: 'Kryper runt i sjuans tabell och äter upp fel svar.',
+    evo: { name: 'SJUFJÄRIL', icon: '🦋', move: 'VINGVIND', desc: 'Har puppat sig och fladdrar nu över hela Sjuskogen.' } },
+  { id: '8', tables: [8], name: 'ÅTTABLÄCK', icon: '🐙', move: 'BLÄCKSPRUT', lvl: 22, place: 'Åttasjön', desc: 'Åtta armar – en för varje svar den vill sno åt sig.',
+    evo: { name: 'ÅTTAKRAKEN', icon: '🦑', move: 'VIRVELSTORM', desc: 'Härskar i djupet av Åttasjön. Blir starkare för varje åtta du räknar.' } },
+  { id: '9', tables: [9], name: 'NIOKATT', icon: '🐱', move: 'KLÖSATTACK', lvl: 27, place: 'Nioberget', desc: 'Har nio liv – och ett knep för varje.',
+    evo: { name: 'NIOTIGER', icon: '🐯', move: 'TIGERSPRÅNG', desc: 'Kissen har vuxit till en tiger som springer upp för Nioberget på nio sekunder.' } },
+  { id: '12', tables: [12], name: 'TOLVTROLL', icon: '👹', move: 'KLUBBSLAG', lvl: 34, place: 'Tolvgrottan', desc: 'Kastar stenar ett dussin åt gången.',
+    evo: { name: 'TOLVJÄTTE', icon: '👺', move: 'JORDSKALV', desc: 'Så stor att Tolvgrottan blivit för trång. Stampar fram tolv jordskalv.' } },
+  { id: '13', tables: [13], name: 'TRETTONSPÖKE', icon: '👻', move: 'SKRÄMSKRIK', lvl: 41, place: 'Trettonslottet', desc: 'Spökar i slottet – och värst är det fredag den trettonde.',
+    evo: { name: 'TRETTONVAMPYR', icon: '🧛', move: 'NATTFLADDER', desc: 'Vaknar vid midnatt och räknar till tretton innan den slår till.' } },
+  { id: 'drake', tables: ALL_TABLES, name: 'TABELLDRAKE', icon: '🐉', move: 'ELDIG GÅNGER', lvl: 60, place: 'Drakens topp', desc: 'Den legendariska härskaren över alla tabeller.', boss: true },
 ];
-const ATTACKS = ['GÅNGERSLAG', 'SIFFERSPARK', 'TABELLSTORM', 'PRODUKTBLIXT'];
-let boss, bossHp = GOAL, heroHp = MAX_HP, timer = null;
-let selected = [], answer = 0, question = '', locked = false;
+// Every win levels a caught monster up; after EVOLVE_AT wins it evolves into its next form
+const EVOLVE_AT = 3, LVL_PER_WIN = 3;
+const HERO_ATTACKS = ['GÅNGERSLAG', 'SIFFERSPARK', 'TABELLSTORM', 'PRODUKTBLIXT'];
+
 const $ = id => document.getElementById(id);
 const rnd = n => Math.floor(Math.random() * n);
 const pick = a => a[rnd(a.length)];
+const byId = id => MONSTERS.find(m => m.id === id);
+const starText = n => '★'.repeat(n) + '☆'.repeat(3 - n);
+// Fewer wrong answers in a won fight give more stars
+const starsFor = errors => errors <= 2 ? 3 : errors <= 6 ? 2 : 1;
+
+// Progress is kept in this browser only: caught monsters, best stars, wins and chosen partner
+function loadState() {
+  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && s.caught) return s; } catch (e) {}
+  return { caught: {}, partner: null };
+}
+let state = loadState();
+function saveState() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {} }
+const isCaught = m => !!state.caught[m.id];
+const caughtCount = () => MONSTERS.filter(isCaught).length;
+const isOpen = (m, i) => m.boss ? MONSTERS.every(o => o.boss || isCaught(o)) : i === 0 || isCaught(MONSTERS[i - 1]);
+const winsOf = m => state.caught[m.id] ? state.caught[m.id].wins : 0;
+const isEvolved = m => !!m.evo && winsOf(m) >= EVOLVE_AT;
+// Name, icon, move and description of the form the player owns
+const form = m => isEvolved(m) ? m.evo : m;
+const levelOf = m => m.lvl + Math.max(0, winsOf(m) - 1) * LVL_PER_WIN;
+const partner = () => state.partner && state.caught[state.partner] ? byId(state.partner) : null;
+
+let timer = null;
+function show(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === view));
+  window.scrollTo(0, 0);
+}
+
+// ---------- Quest map ----------
+function professorSays() {
+  const n = MONSTERS.filter(m => !m.boss && isCaught(m)).length;
+  const next = MONSTERS.find((m, i) => !isCaught(m) && isOpen(m, i));
+  if (n === 0) return 'PROFESSOR GÅNGER: Hjälp! Tabellmonster har tagit över Gångerlandet. Besegra dem och fånga dem i din Matteboll. Börja vid Sexstranden!';
+  if (next && !next.boss) return 'Bra jobbat! Du har fångat ' + n + ' av 6 tabellmonster. Nästa mål: ' + next.place + '.';
+  if (next) return 'Alla sex fångade! Nu väntar TABELLDRAKEN på Drakens topp. Den använder ALLA tabeller – är du redo?';
+  return 'Du är TABELLMÄSTARE! Utmana monstren igen och försök få ★★★ på alla.';
+}
+
+function renderMap() {
+  $('profText').textContent = professorSays();
+  $('openDex').textContent = '📖 Monsterdex (' + caughtCount() + '/' + MONSTERS.length + ')';
+  const path = $('path');
+  path.innerHTML = '';
+  let nextMarked = false;
+  MONSTERS.forEach((m, i) => {
+    const open = isOpen(m, i), caught = isCaught(m);
+    const b = document.createElement('button');
+    b.className = 'node' + (caught ? ' caught' : '') + (open ? '' : ' locked') + (m.boss ? ' boss' : '');
+    if (open && !caught && !nextMarked) { b.classList.add('next'); nextMarked = true; }
+    b.disabled = !open;
+    const what = m.boss ? 'Alla tabeller' : 'Tabell ' + m.tables[0];
+    const f = form(m);
+    b.innerHTML = '<span class="icon' + (caught ? '' : ' sil') + '" aria-hidden="true">' + f.icon + '</span><span>'
+      + '<span class="place">' + m.place + '</span><br>' + what + '<br>'
+      + (caught ? f.name + ' :L' + levelOf(m) + '<br><span class="stars">' + starText(state.caught[m.id].stars) + '</span> Träna igen!' : open ? '???<br>Tryck för att slåss!' : '🔒 Låst')
+      + '</span>';
+    b.setAttribute('aria-label', m.place + ', ' + what + (caught ? ', ' + f.name + ' fångad' : open ? ', okänt monster' : ', låst'));
+    b.onclick = () => startFight(m);
+    path.appendChild(b);
+  });
+  show('map');
+}
+
+// ---------- Monsterdex ----------
+function renderDex() {
+  const p = partner();
+  $('dexText').textContent = 'MONSTERDEX: ' + caughtCount() + ' av ' + MONSTERS.length + ' fångade. '
+    + (p ? 'Din partner är ' + form(p).name + '. Varje vinst ger nivåer – efter ' + EVOLVE_AT + ' vinster utvecklas monstret!' : 'Fånga ett monster så blir det din partner i striderna!');
+  const grid = $('dexGrid');
+  grid.innerHTML = '';
+  MONSTERS.forEach((m, i) => {
+    const c = state.caught[m.id];
+    const card = document.createElement('div');
+    card.className = 'card' + (c ? ' caught' : '') + (p === m ? ' partner' : '');
+    const what = m.boss ? 'Alla tabeller' : 'Tabell ' + m.tables[0];
+    const f = form(m);
+    let growth = '';
+    if (c && m.evo && !isEvolved(m)) {
+      const left = EVOLVE_AT - c.wins;
+      growth = '<p class="evo"><span class="sil" aria-hidden="true">' + m.evo.icon + '</span> Utvecklas om ' + left + ' ' + (left === 1 ? 'vinst' : 'vinster')
+        + '<span class="track"><span class="fill" style="width:' + (100 * c.wins / EVOLVE_AT) + '%"></span></span></p>';
+    } else if (c) growth = '<p class="evo">' + (m.boss ? 'Legendarisk!' : 'Fullt utvecklad!') + '</p>';
+    card.innerHTML = '<div class="icon' + (c ? '' : ' sil') + '" aria-hidden="true">' + f.icon + '</div>'
+      + '<b>#' + (i + 1) + ' ' + (c ? f.name : '???') + '</b><br>' + what + (c ? ' · :L' + levelOf(m) : '')
+      + (c ? '<br><span class="stars">' + starText(c.stars) + '</span><p>' + f.desc + '</p>Besegrad ' + c.wins + ' ' + (c.wins === 1 ? 'gång' : 'gånger') + growth
+           : '<p>Bor vid ' + m.place + '.</p>');
+    if (c) {
+      const b = document.createElement('button');
+      b.textContent = p === m ? '★ Partner' : 'Välj som partner';
+      b.disabled = p === m;
+      b.onclick = () => { state.partner = m.id; saveState(); renderDex(); };
+      card.appendChild(b);
+    }
+    grid.appendChild(card);
+  });
+  show('dex');
+}
+
+// ---------- Battle ----------
+let foe, tables = [], bossHp = GOAL, heroHp = MAX_HP, errors = 0;
+let answer = 0, question = '', locked = false;
 // Timeouts belong to one fight; leaving or restarting cancels the pending ones
 let fightId = 0;
 const later = (fn, ms) => { const id = fightId; setTimeout(() => { if (id === fightId) fn(); }, ms); };
@@ -164,24 +331,58 @@ function animate(el, cls) {
 
 function say(msg) { $('message').textContent = msg; }
 
-function startFight() {
-  fightId++;
-  boss = pick(BOSSES);
-  bossHp = GOAL; heroHp = MAX_HP;
-  $('bossName').textContent = boss.name;
-  $('bossSprite').textContent = boss.icon;
-  $('bossSprite').classList.remove('fainted'); $('heroSprite').classList.remove('fainted');
-  $('overlay').style.display = 'none';
+// Show ▼ and continue when the text box is tapped / a key is pressed, or after ms
+let pending = null;
+function waitThen(fn, ms) {
+  const run = () => {
+    if (pending !== run) return;
+    pending = null; $('textbox').classList.remove('wait');
+    fn();
+  };
+  pending = run;
+  $('textbox').classList.add('wait');
+  later(run, ms);
+}
+function skip() { if (pending) pending(); }
+
+function stopFight() {
+  fightId++; pending = null; locked = true;
+  $('textbox').classList.remove('wait');
+}
+
+function startFight(m) {
+  stopFight();
+  foe = m; tables = m.tables;
+  bossHp = GOAL; heroHp = MAX_HP; errors = 0;
+  const p = partner();
+  $('bossName').textContent = m.name;
+  $('bossLvl').textContent = ':L' + m.lvl;
+  $('bossSprite').textContent = m.icon;
+  const pf = p && form(p);
+  $('heroSprite').textContent = p ? pf.icon : '🧒';
+  $('heroName').textContent = p ? pf.name : 'DU';
+  $('heroLvl').textContent = ':L' + (p ? levelOf(p) : 10);
+  $('bossSprite').classList.remove('fainted', 'evolving'); $('heroSprite').classList.remove('fainted');
+  $('ball').className = '';
+  $('overlay').style.display = 'none'; $('flee').style.display = '';
   updateBars();
   $('menu').innerHTML = ''; $('question').textContent = '';
-  say('En vild ' + boss.name + ' dyker upp!');
-  locked = true;
-  later(nextQuestion, 1400);
+  show('game');
+  animate($('bossSprite'), 'enter');
+  say(isCaught(m) ? m.name + ' vill ha revansch!'
+    : m.boss ? 'Marken skakar... Den legendariska ' + m.name + ' vaknar!'
+    : 'En vild ' + m.name + ' dyker upp vid ' + m.place + '!');
+  waitThen(() => {
+    if (!p) { nextQuestion(); return; }
+    say('Kör, ' + pf.name + '!');
+    animate($('heroSprite'), 'enter');
+    waitThen(nextQuestion, 2500);
+  }, 4000);
 }
 
 function nextQuestion() {
   locked = false;
-  const t = selected[rnd(selected.length)], n = 1 + rnd(10);
+  const t = pick(tables), n = 1 + rnd(10);
   answer = t * n;
   question = t + ' × ' + n;
   say('Vad blir');
@@ -205,64 +406,118 @@ function choose(btn, v) {
   locked = true;
   if (v === answer) {
     btn.classList.add('right');
+    document.querySelectorAll('.opt').forEach(b => b.disabled = true);
     bossHp--;
+    const p = partner();
     $('question').textContent = '';
-    say('DU använder ' + pick(ATTACKS) + '! ' + question + ' = ' + answer + '. Det är supereffektivt!');
+    say((p ? form(p).name : 'DU') + ' använder ' + (p ? form(p).move : pick(HERO_ATTACKS)) + '! ' + question + ' = ' + answer + '. Det är supereffektivt!');
     animate($('heroSprite'), 'attack');
     later(() => { animate($('bossSprite'), 'hit'); updateBars(); }, 300);
     if (bossHp <= 0) {
-      later(() => { $('bossSprite').classList.add('fainted'); say(boss.name + ' svimmade! Du vann!'); }, 1400);
-      later(startReward, 3200);
-    } else later(nextQuestion, 1600);
+      $('flee').style.display = 'none';
+      later(() => { $('bossSprite').classList.add('fainted'); $('menu').innerHTML = ''; say(foe.name + ' svimmade!'); }, 1400);
+      later(() => waitThen(win, 4000), 1500);
+    } else later(() => waitThen(nextQuestion, 5000), 600);
   } else {
     btn.classList.add('wrong');
     btn.disabled = true;
-    heroHp--;
-    say('Fel! ' + boss.name + ' använder ' + boss.move + '!');
+    heroHp--; errors++;
+    say('Fel! ' + foe.name + ' använder ' + foe.move + '! Försök igen:');
     animate($('bossSprite'), 'attack');
     later(() => { animate($('heroSprite'), 'hit'); animate($('arena'), 'flash'); updateBars(); }, 300);
     if (heroHp <= 0) {
       later(() => {
+        const p = partner();
         $('heroSprite').classList.add('fainted');
         $('question').textContent = '';
-        say('Du svimmade! ' + boss.name + ' vann den här gången...');
         $('menu').innerHTML = '';
-        $('overlay').style.display = 'block';
+        say((p ? form(p).name + ' orkar inte mer!' : 'Du svimmade!') + ' ' + foe.name + ' vann den här gången... Öva och försök igen!');
+        $('overlay').style.display = 'flex'; $('flee').style.display = 'none';
       }, 1200);
-    } else later(() => { locked = false; say('Försök igen! Vad blir'); }, 1100);
+    } else later(() => { locked = false; }, 700);
   }
 }
 
-function startReward() {
+// Play messages one after another; each step returns how long to wait before moving on
+function sequence(steps, done) {
+  const step = steps.shift();
+  if (!step) { done(); return; }
+  waitThen(() => sequence(steps, done), step());
+}
+
+// Record the win, then: throw the Matteboll at new monsters, give stars, level up and maybe evolve
+function win() {
+  const m = foe, stars = starsFor(errors), old = state.caught[m.id];
+  const firstCatch = !old, firstPartner = !partner();
+  const before = old && form(m);
+  state.caught[m.id] = { stars: Math.max(stars, old ? old.stars : 0), wins: (old ? old.wins : 0) + 1 };
+  if (firstPartner) state.partner = m.id;
+  saveState();
+  const evolved = old && isEvolved(m) && before !== form(m);
+  const sprite = $('bossSprite'), steps = [];
+  if (firstCatch) {
+    steps.push(() => { say('Du kastar en MATTEBOLL!'); $('ball').className = 'throw'; return 2500; });
+    steps.push(() => { $('ball').className = 'done'; say('Hurra! ' + m.name + ' fångades! Den finns nu i din Monsterdex.'); return 5000; });
+  } else {
+    steps.push(() => { say('Du besegrade ' + m.name + ' igen! Bra tränat!'); return 4000; });
+  }
+  steps.push(() => { say('Betyg: ' + starText(stars) + ' (' + errors + ' fel)' + (old && stars > old.stars ? ' – nytt rekord!' : '.')); return 5000; });
+  if (old) steps.push(() => {
+    const left = EVOLVE_AT - winsOf(m);
+    say(before.name + ' gick upp till nivå ' + levelOf(m) + '!' + (m.evo && left > 0 ? ' Den känns starkare... ' + left + ' ' + (left === 1 ? 'vinst' : 'vinster') + ' till!' : ''));
+    return 5000;
+  });
+  if (evolved) {
+    steps.push(() => {
+      $('ball').className = '';
+      sprite.textContent = before.icon; sprite.classList.remove('fainted'); sprite.classList.add('evolving');
+      say('Vad händer? ' + before.name + ' utvecklas!');
+      return 3200;
+    });
+    steps.push(() => {
+      sprite.classList.remove('evolving'); sprite.textContent = m.evo.icon; animate($('arena'), 'flash');
+      say('Grattis! ' + before.name + ' utvecklades till ' + m.evo.name + '! Den lärde sig ' + m.evo.move + '!');
+      return 6000;
+    });
+  }
+  if (firstPartner) steps.push(() => { say(m.name + ' gillar dig! Den blir din partner i nästa strid.'); return 5000; });
+  sequence(steps, () => startReward(m, firstCatch, evolved));
+}
+
+function startReward(m, firstCatch, evolved) {
+  stopFight();
+  $('rewardIcon').textContent = form(m).icon;
+  $('rewardTitle').textContent = evolved ? '🏆 ' + m.name + ' utvecklades till ' + m.evo.name + '!'
+    : firstCatch ? (m.boss ? '🏆 Du är Tabellmästare!' : '🏆 Du fångade ' + m.name + '!')
+    : '🏆 ' + form(m).name + ' nådde nivå ' + levelOf(m) + '!';
   const end = Date.now() + HOUR;
-  $('game').style.display = 'none'; $('reward').style.display = 'block';
+  show('reward');
   const tick = () => {
     const left = end - Date.now();
-    if (left <= 0) {
-      clearInterval(timer); timer = null;
-      $('reward').style.display = 'none'; $('game').style.display = 'block';
-      startFight();
-      return;
-    }
-    const m = Math.floor(left / 60000), sec = Math.floor(left / 1000) % 60;
-    $('clock').textContent = m + ' min ' + String(sec).padStart(2, '0') + ' s';
+    if (left <= 0) { leaveReward(); return; }
+    const min = Math.floor(left / 60000), sec = Math.floor(left / 1000) % 60;
+    $('clock').textContent = min + ' min ' + String(sec).padStart(2, '0') + ' s';
   };
   tick(); timer = setInterval(tick, 1000);
 }
 
-$('start').onclick = () => {
-  selected = [...document.querySelectorAll('#tables input:checked')].map(i => +i.value);
-  if (!selected.length) { $('error').textContent = 'Välj minst en tabell!'; return; }
-  $('error').textContent = '';
-  $('setup').style.display = 'none'; $('game').style.display = 'block';
-  startFight();
-};
-$('retry').onclick = startFight;
-$('back').onclick = $('back2').onclick = () => {
+function leaveReward() {
   if (timer) { clearInterval(timer); timer = null; }
-  locked = true; fightId++;
-  $('reward').style.display = 'none'; $('game').style.display = 'none'; $('setup').style.display = 'block';
+  renderMap();
+}
+
+$('textbox').onclick = skip;
+document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && pending) { e.preventDefault(); skip(); } });
+$('retry').onclick = () => startFight(foe);
+$('giveUp').onclick = $('flee').onclick = () => { stopFight(); renderMap(); };
+$('rewardBack').onclick = leaveReward;
+$('openDex').onclick = renderDex;
+$('closeDex').onclick = renderMap;
+$('reset').onclick = () => {
+  if (!confirm('Vill du verkligen släppa alla monster och börja om?')) return;
+  state = { caught: {}, partner: null }; saveState(); renderMap();
 };
+renderMap();
 </script>
 </body>
 </html>
