@@ -3,43 +3,115 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Matteträning – Multiplikationstabellen</title>
+<title>Matteträning – Bossfight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
-  body { font-family: sans-serif; text-align: center; background: #f0f7ff; margin: 0; padding: 1em; }
-  h1 { color: #2a5d9f; }
-  .tables { display: flex; flex-wrap: wrap; justify-content: center; gap: .5em; max-width: 30em; margin: 1em auto; }
-  .tables label { background: #fff; border: 2px solid #2a5d9f; border-radius: .5em; padding: .6em 1em; font-size: 1.3em; cursor: pointer; }
-  .tables input:checked + span { font-weight: bold; color: #c0392b; }
-  button { font-size: 1.2em; padding: .5em 1.2em; border-radius: .5em; border: none; background: #2a5d9f; color: #fff; cursor: pointer; }
-  #error { color: #c0392b; min-height: 1.5em; }
-  #game { display: none; }
-  #circle { position: relative; width: min(90vw, 26em); height: min(90vw, 26em); margin: 1em auto; }
-  #question { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.2em; font-weight: bold; color: #2a5d9f; }
-  .opt { position: absolute; width: 3.6em; height: 3.6em; margin: -1.8em 0 0 -1.8em; border-radius: 50%; border: 2px solid #2a5d9f; background: #fff; font-size: 1.1em; cursor: pointer; padding: 0; color: #000; }
-  .opt.right { background: #7ddc7d; }
-  .opt.wrong { background: #f4a0a0; }
-  #score { font-size: 1.2em; }
-  #reward { display: none; }
-  #clock { font-size: 3em; font-weight: bold; color: #2a5d9f; }
+  :root { --dark: #0f380f; --mid: #306230; --light: #8bac0f; --pale: #e8f0d0; --hp-ok: #38b048; --hp-mid: #f0c020; --hp-low: #e03828; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Press Start 2P', ui-monospace, monospace; background: #20242a; color: var(--dark); margin: 0; padding: 1em; text-align: center; line-height: 1.5; }
+  h1 { color: var(--light); font-size: 1.3em; margin: .3em 0 .8em; }
+  .screen { max-width: 34em; margin: 0 auto; background: var(--pale); border: 4px solid var(--dark); border-radius: .4em; box-shadow: 0 0 0 4px var(--pale), 0 0 0 8px var(--dark); padding: 1em; }
+  button { font-family: inherit; font-size: .8em; padding: .8em 1.2em; border: 3px solid var(--dark); border-radius: .3em; background: #fff; color: var(--dark); cursor: pointer; }
+  button:hover:not(:disabled), button:focus-visible { background: var(--light); outline: none; }
+  .small { font-size: .65em; margin-top: 1em; }
+  .tables { display: flex; flex-wrap: wrap; justify-content: center; gap: .6em; margin: 1.2em auto; }
+  .tables label { background: #fff; border: 3px solid var(--dark); border-radius: .3em; padding: .7em 1em; cursor: pointer; }
+  .tables input { accent-color: var(--mid); }
+  .tables input:checked + span { color: var(--hp-low); }
+  #error { color: var(--hp-low); min-height: 1.5em; font-size: .7em; }
+  #game, #reward { display: none; }
+
+  /* Arena */
+  #arena { position: relative; height: 16em; background: linear-gradient(#f8f8e8 0 55%, #d8e8a8 55%); border: 3px solid var(--dark); border-radius: .3em; overflow: hidden; }
+  #arena.flash { animation: flash .4s; }
+  .sprite { position: absolute; font-size: 4.5em; line-height: 1; transition: opacity .6s, transform .6s; }
+  .sprite::after { content: ''; position: absolute; left: 50%; bottom: -.12em; width: 1.6em; height: .35em; transform: translateX(-50%); background: rgba(48, 98, 48, .35); border-radius: 50%; z-index: -1; }
+  #bossSprite { right: 10%; top: 12%; }
+  #heroSprite { left: 10%; bottom: 8%; transform: scaleX(-1); }
+  .sprite.hit { animation: hit .5s; }
+  #heroSprite.hit { animation: herohit .5s; }
+  .sprite.attack { animation: lunge .4s; }
+  #heroSprite.attack { animation: herolunge .4s; }
+  .sprite.fainted { opacity: 0; transform: translateY(1em); }
+  #heroSprite.fainted { transform: scaleX(-1) translateY(1em); }
+
+  .info { position: absolute; width: 52%; background: #fff; border: 3px solid var(--dark); border-radius: .3em .3em .3em 1em; padding: .4em .6em; text-align: left; font-size: .6em; }
+  #bossInfo { left: 3%; top: 6%; }
+  #heroInfo { right: 3%; bottom: 8%; border-radius: .3em .3em 1em .3em; }
+  .name { display: flex; justify-content: space-between; gap: .5em; white-space: nowrap; overflow: hidden; }
+  .bar { display: flex; align-items: center; gap: .4em; margin-top: .4em; }
+  .bar b { color: #c06000; font-size: .9em; }
+  .track { flex: 1; height: .8em; background: #506050; border: 2px solid var(--dark); border-radius: .5em; overflow: hidden; }
+  .fill { height: 100%; width: 100%; background: var(--hp-ok); transition: width .6s ease-out, background .3s; }
+  .fill.mid { background: var(--hp-mid); }
+  .fill.low { background: var(--hp-low); }
+  .hpnum { text-align: right; margin-top: .3em; }
+
+  /* Text box & menu */
+  #textbox { margin-top: .8em; min-height: 5.2em; background: #fff; border: 3px solid var(--dark); border-radius: .3em; box-shadow: inset 0 0 0 3px var(--pale), inset 0 0 0 5px var(--mid); padding: 1em; text-align: left; font-size: .75em; }
+  #question { font-size: 1.4em; color: var(--dark); }
+  #menu { display: grid; grid-template-columns: repeat(5, 1fr); gap: .4em; margin-top: .8em; }
+  .opt { position: relative; padding: .9em 0; font-size: .85em; }
+  .opt:hover:not(:disabled)::before, .opt:focus-visible::before { content: '▶'; position: absolute; left: .2em; font-size: .7em; top: 50%; transform: translateY(-50%); }
+  .opt.right, .opt.right:hover { background: var(--hp-ok); color: #fff; }
+  .opt.wrong { background: var(--hp-low); color: #fff; text-decoration: line-through; }
+  .opt:disabled { cursor: default; }
+  #overlay { display: none; margin-top: .8em; }
+  #clock { font-size: 1.6em; margin: .6em 0; color: var(--mid); }
+
+  @keyframes hit { 0%, 100% { transform: translateX(0); opacity: 1; } 15%, 45%, 75% { opacity: 0; } 20% { transform: translateX(-.15em); } 40% { transform: translateX(.15em); } 60% { transform: translateX(-.1em); } }
+  @keyframes herohit { 0%, 100% { transform: scaleX(-1); opacity: 1; } 15%, 45%, 75% { opacity: 0; } 20% { transform: scaleX(-1) translateX(-.15em); } 40% { transform: scaleX(-1) translateX(.15em); } }
+  @keyframes lunge { 50% { transform: translate(-.4em, .3em); } }
+  @keyframes herolunge { 50% { transform: scaleX(-1) translate(-.4em, -.3em); } }
+  @keyframes flash { 30% { background: #fff; filter: invert(1); } }
+  @media (max-width: 30em) {
+    body { padding: .5em; font-size: 14px; }
+    .screen { padding: .6em; }
+    #menu { grid-template-columns: repeat(5, 1fr); gap: .3em; }
+    .opt { font-size: .75em; }
+    .sprite { font-size: 3.6em; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
-<h1>Matteträning</h1>
-<div id="setup">
-  <p>Välj vilka multiplikationstabeller du vill träna på:</p>
-  <div class="tables" id="tables"></div>
-  <div id="error" role="alert"></div>
-  <button id="start">Starta</button>
-</div>
-<div id="reward">
-  <h2>Grattis! 20 rätt!</h2>
-  <p>Tid kvar:</p>
-  <div id="clock"></div>
-</div>
-<div id="game">
-  <p id="score"></p>
-  <div id="circle"><div id="question"></div></div>
-  <button id="back">Byt tabeller</button>
+<h1>⚔ Matte-Bossfight ⚔</h1>
+<div class="screen">
+  <div id="setup">
+    <p style="font-size:.8em">Välj vilka multiplikationstabeller du vill slåss med:</p>
+    <div class="tables" id="tables"></div>
+    <div id="error" role="alert"></div>
+    <button id="start">▶ Starta striden</button>
+  </div>
+
+  <div id="game">
+    <div id="arena">
+      <div class="info" id="bossInfo">
+        <div class="name"><span id="bossName"></span><span>:L50</span></div>
+        <div class="bar"><b>HP</b><div class="track"><div class="fill" id="bossHp"></div></div></div>
+      </div>
+      <div class="sprite" id="bossSprite" aria-hidden="true"></div>
+      <div class="sprite" id="heroSprite" aria-hidden="true">🧒</div>
+      <div class="info" id="heroInfo">
+        <div class="name"><span>DU</span><span>:L10</span></div>
+        <div class="bar"><b>HP</b><div class="track"><div class="fill" id="heroHp"></div></div></div>
+        <div class="hpnum" id="heroHpNum"></div>
+      </div>
+    </div>
+    <div id="textbox" aria-live="polite"><div id="message"></div><div id="question"></div></div>
+    <div id="menu"></div>
+    <div id="overlay"><button id="retry">▶ Försök igen</button></div>
+    <button id="back" class="small">Byt tabeller</button>
+  </div>
+
+  <div id="reward">
+    <h2 style="font-size:1em">🏆 Du besegrade bossen!</h2>
+    <p style="font-size:.7em">Tid kvar av belöningen:</p>
+    <div id="clock"></div>
+    <button id="back2" class="small">Byt tabeller</button>
+  </div>
 </div>
 <script>
 const tablesEl = document.getElementById('tables');
@@ -48,62 +120,117 @@ const tablesEl = document.getElementById('tables');
   l.innerHTML = '<input type="checkbox" value="' + t + '"> <span>' + t + '</span>';
   tablesEl.appendChild(l);
 });
-const GOAL = 20, HOUR = 60 * 60 * 1000;
-let wrong = 0, timer = null;
-let selected = [], correct = 0, total = 0, answer = 0, locked = false;
+// Boss has GOAL HP (one per correct answer), you have MAX_HP (one per wrong answer)
+const GOAL = 20, MAX_HP = 20, HOUR = 60 * 60 * 1000;
+const BOSSES = [
+  { name: 'TABELLDRAKE', icon: '🐉', move: 'ELDIG GÅNGER' },
+  { name: 'SIFFERTROLL', icon: '👹', move: 'KLUBBSLAG' },
+  { name: 'RÄKNEGAST', icon: '👻', move: 'SKRÄMSKRIK' },
+  { name: 'MATTEROBOT', icon: '🤖', move: 'LASERSTRÅLE' },
+  { name: 'PRODUKTORM', icon: '🐍', move: 'GIFTBETT' },
+];
+const ATTACKS = ['GÅNGERSLAG', 'SIFFERSPARK', 'TABELLSTORM', 'PRODUKTBLIXT'];
+let boss, bossHp = GOAL, heroHp = MAX_HP, timer = null;
+let selected = [], answer = 0, question = '', locked = false;
 const $ = id => document.getElementById(id);
 const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+// Timeouts belong to one fight; leaving or restarting cancels the pending ones
+let fightId = 0;
+const later = (fn, ms) => { const id = fightId; setTimeout(() => { if (id === fightId) fn(); }, ms); };
 
 function shuffle(a) {
   for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
 }
 
+function setBar(el, hp, max) {
+  const p = Math.max(0, hp) / max;
+  el.style.width = (p * 100) + '%';
+  el.classList.toggle('mid', p <= .5 && p > .2);
+  el.classList.toggle('low', p <= .2);
+}
+
+function updateBars() {
+  setBar($('bossHp'), bossHp, GOAL);
+  setBar($('heroHp'), heroHp, MAX_HP);
+  $('heroHpNum').textContent = Math.max(0, heroHp) + '/ ' + MAX_HP;
+}
+
+function animate(el, cls) {
+  el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
+  setTimeout(() => el.classList.remove(cls), 600);
+}
+
+function say(msg) { $('message').textContent = msg; }
+
+function startFight() {
+  fightId++;
+  boss = pick(BOSSES);
+  bossHp = GOAL; heroHp = MAX_HP;
+  $('bossName').textContent = boss.name;
+  $('bossSprite').textContent = boss.icon;
+  $('bossSprite').classList.remove('fainted'); $('heroSprite').classList.remove('fainted');
+  $('overlay').style.display = 'none';
+  updateBars();
+  $('menu').innerHTML = ''; $('question').textContent = '';
+  say('En vild ' + boss.name + ' dyker upp!');
+  locked = true;
+  later(nextQuestion, 1400);
+}
+
 function nextQuestion() {
   locked = false;
   const t = selected[rnd(selected.length)], n = 1 + rnd(10);
   answer = t * n;
-  $('question').textContent = t + ' × ' + n;
+  question = t + ' × ' + n;
+  say('Vad blir');
+  $('question').textContent = question + ' = ?';
   const opts = new Set([answer]);
   // Distractors: neighbouring products in the same table, then nearby numbers
   [-3, -2, -1, 1, 2, 3].forEach(d => { const v = t * (n + d); if (v > 0) opts.add(v); });
   for (let k = 1; opts.size < 10; k++) { [answer + k, answer - k].forEach(v => { if (v > 0 && opts.size < 10) opts.add(v); }); }
-  const list = shuffle([...opts]);
-  document.querySelectorAll('.opt').forEach(b => b.remove());
-  list.forEach((v, i) => {
-    const ang = (2 * Math.PI * i) / 10 - Math.PI / 2;
+  $('menu').innerHTML = '';
+  shuffle([...opts]).forEach(v => {
     const b = document.createElement('button');
     b.className = 'opt';
     b.textContent = v;
-    b.style.left = (50 + 40 * Math.cos(ang)) + '%';
-    b.style.top = (50 + 40 * Math.sin(ang)) + '%';
     b.onclick = () => choose(b, v);
-    $('circle').appendChild(b);
+    $('menu').appendChild(b);
   });
 }
 
 function choose(btn, v) {
   if (locked) return;
-  total++;
+  locked = true;
   if (v === answer) {
-    locked = true; correct++;
     btn.classList.add('right');
-    updateScore();
-    if (correct >= GOAL) setTimeout(startReward, 700);
-    else setTimeout(nextQuestion, 700);
+    bossHp--;
+    $('question').textContent = '';
+    say('DU använder ' + pick(ATTACKS) + '! ' + question + ' = ' + answer + '. Det är supereffektivt!');
+    animate($('heroSprite'), 'attack');
+    later(() => { animate($('bossSprite'), 'hit'); updateBars(); }, 300);
+    if (bossHp <= 0) {
+      later(() => { $('bossSprite').classList.add('fainted'); say(boss.name + ' svimmade! Du vann!'); }, 1400);
+      later(startReward, 3200);
+    } else later(nextQuestion, 1600);
   } else {
-    wrong++;
     btn.classList.add('wrong');
     btn.disabled = true;
-    if (wrong > GOAL) { resetRound(); return; }
-    updateScore();
+    heroHp--;
+    say('Fel! ' + boss.name + ' använder ' + boss.move + '!');
+    animate($('bossSprite'), 'attack');
+    later(() => { animate($('heroSprite'), 'hit'); animate($('arena'), 'flash'); updateBars(); }, 300);
+    if (heroHp <= 0) {
+      later(() => {
+        $('heroSprite').classList.add('fainted');
+        $('question').textContent = '';
+        say('Du svimmade! ' + boss.name + ' vann den här gången...');
+        $('menu').innerHTML = '';
+        $('overlay').style.display = 'block';
+      }, 1200);
+    } else later(() => { locked = false; say('Försök igen! Vad blir'); }, 1100);
   }
-}
-
-function resetRound() {
-  correct = total = wrong = 0; updateScore();
-  setTimeout(nextQuestion, 700);
-  locked = true;
 }
 
 function startReward() {
@@ -114,7 +241,7 @@ function startReward() {
     if (left <= 0) {
       clearInterval(timer); timer = null;
       $('reward').style.display = 'none'; $('game').style.display = 'block';
-      correct = total = wrong = 0; updateScore(); nextQuestion();
+      startFight();
       return;
     }
     const m = Math.floor(left / 60000), sec = Math.floor(left / 1000) % 60;
@@ -123,18 +250,19 @@ function startReward() {
   tick(); timer = setInterval(tick, 1000);
 }
 
-function updateScore() { $('score').textContent = 'Rätt: ' + correct + ' av ' + total + ' försök – ' + (GOAL - correct) + ' kvar till ' + GOAL + ' rätt (fel: ' + wrong + ' av ' + GOAL + ')'; }
-
 $('start').onclick = () => {
   selected = [...document.querySelectorAll('#tables input:checked')].map(i => +i.value);
   if (!selected.length) { $('error').textContent = 'Välj minst en tabell!'; return; }
   $('error').textContent = '';
-  correct = total = wrong = 0; updateScore();
   $('setup').style.display = 'none'; $('game').style.display = 'block';
-  nextQuestion();
+  startFight();
 };
-$('back').onclick = () => {
-  if (timer) { clearInterval(timer); timer = null; $('reward').style.display = 'none'; } $('game').style.display = 'none'; $('setup').style.display = 'block'; };
+$('retry').onclick = startFight;
+$('back').onclick = $('back2').onclick = () => {
+  if (timer) { clearInterval(timer); timer = null; }
+  locked = true; fightId++;
+  $('reward').style.display = 'none'; $('game').style.display = 'none'; $('setup').style.display = 'block';
+};
 </script>
 </body>
 </html>
