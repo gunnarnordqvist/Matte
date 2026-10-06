@@ -19,6 +19,8 @@
   .opt.right { background: #7ddc7d; }
   .opt.wrong { background: #f4a0a0; }
   #score { font-size: 1.2em; }
+  #reward { display: none; }
+  #clock { font-size: 3em; font-weight: bold; color: #2a5d9f; }
 </style>
 </head>
 <body>
@@ -28,6 +30,11 @@
   <div class="tables" id="tables"></div>
   <div id="error" role="alert"></div>
   <button id="start">Starta</button>
+</div>
+<div id="reward">
+  <h2>Grattis! 20 rätt!</h2>
+  <p>Tid kvar:</p>
+  <div id="clock"></div>
 </div>
 <div id="game">
   <p id="score"></p>
@@ -41,6 +48,8 @@ for (let t = 1; t <= 12; t++) {
   l.innerHTML = '<input type="checkbox" value="' + t + '"> <span>' + t + '</span>';
   tablesEl.appendChild(l);
 }
+const GOAL = 20, HOUR = 60 * 60 * 1000;
+let wrong = 0, timer = null;
 let selected = [], correct = 0, total = 0, answer = 0, locked = false;
 const $ = id => document.getElementById(id);
 const rnd = n => Math.floor(Math.random() * n);
@@ -80,25 +89,52 @@ function choose(btn, v) {
     locked = true; correct++;
     btn.classList.add('right');
     updateScore();
-    setTimeout(nextQuestion, 700);
+    if (correct >= GOAL) setTimeout(startReward, 700);
+    else setTimeout(nextQuestion, 700);
   } else {
+    wrong++;
     btn.classList.add('wrong');
     btn.disabled = true;
+    if (wrong > GOAL) { resetRound(); return; }
     updateScore();
   }
 }
 
-function updateScore() { $('score').textContent = 'Rätt: ' + correct + ' av ' + total + ' försök'; }
+function resetRound() {
+  correct = total = wrong = 0; updateScore();
+  setTimeout(nextQuestion, 700);
+  locked = true;
+}
+
+function startReward() {
+  const end = Date.now() + HOUR;
+  $('game').style.display = 'none'; $('reward').style.display = 'block';
+  const tick = () => {
+    const left = end - Date.now();
+    if (left <= 0) {
+      clearInterval(timer); timer = null;
+      $('reward').style.display = 'none'; $('game').style.display = 'block';
+      correct = total = wrong = 0; updateScore(); nextQuestion();
+      return;
+    }
+    const m = Math.floor(left / 60000), sec = Math.floor(left / 1000) % 60;
+    $('clock').textContent = m + ' min ' + String(sec).padStart(2, '0') + ' s';
+  };
+  tick(); timer = setInterval(tick, 1000);
+}
+
+function updateScore() { $('score').textContent = 'Rätt: ' + correct + ' av ' + total + ' försök – ' + (GOAL - correct) + ' kvar till ' + GOAL + ' rätt (fel: ' + wrong + ' av ' + GOAL + ')'; }
 
 $('start').onclick = () => {
   selected = [...document.querySelectorAll('#tables input:checked')].map(i => +i.value);
   if (!selected.length) { $('error').textContent = 'Välj minst en tabell!'; return; }
   $('error').textContent = '';
-  correct = total = 0; updateScore();
+  correct = total = wrong = 0; updateScore();
   $('setup').style.display = 'none'; $('game').style.display = 'block';
   nextQuestion();
 };
-$('back').onclick = () => { $('game').style.display = 'none'; $('setup').style.display = 'block'; };
+$('back').onclick = () => {
+  if (timer) { clearInterval(timer); timer = null; $('reward').style.display = 'none'; } $('game').style.display = 'none'; $('setup').style.display = 'block'; };
 </script>
 </body>
 </html>
