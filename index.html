@@ -17,6 +17,9 @@
   button:focus-visible { background: var(--light); outline: none; }
   @media (hover: hover) { button:hover:not(:disabled) { background: var(--light); } }
   .small { font-size: .65em; margin-top: 1em; }
+  #audioBar { display: flex; justify-content: center; gap: .5em; margin: -.3em 0 1em; }
+  #audioBar button { font-size: .55em; padding: .5em .8em; background: var(--pale); }
+  #audioBar button[aria-pressed="false"] { opacity: .55; text-decoration: line-through; }
   .view { display: none; }
   .view.on { display: block; }
   .stars { color: var(--gold); letter-spacing: .1em; }
@@ -132,6 +135,7 @@
 </head>
 <body>
 <h1>⚔ Table Monsters ⚔</h1>
+<div id="audioBar"><button id="musicBtn"></button><button id="sfxBtn"></button></div>
 <div class="screen">
   <div id="map" class="view on">
     <div class="textbox" id="professor"><span class="face" aria-hidden="true">👴</span><span id="profText"></span></div>
@@ -175,6 +179,200 @@
     <button id="rewardBack" class="small">◀ Back to map</button>
   </div>
 </div>
+<script>
+// ---------- Sound: chiptune music and effects synthesised with the Web Audio API (no audio files) ----------
+const Sound = (() => {
+  const KEY = 'matte-sound';
+  let settings = { music: true, sfx: true };
+  try { Object.assign(settings, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) {}
+  let ctx = null, musicBus, sfxBus, pulse, noiseBuf, player = null, wanted = null;
+
+  // Note names like 'C#5' to Hz; '-' is a rest. Tokens are 'NOTE[:eighths]'
+  const SEMI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  const midi = n => { const m = /^([A-G])([#b]?)(-?\d)$/.exec(n); return 12 * (+m[3] + 1) + SEMI[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); };
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+  const seq = (str, shift = 0) => str.split(/\s+/).filter(t => t && t !== '|').map(t => {
+    const [n, len] = t.split(':');
+    return [n === '-' || /^[ksh]$/.test(n) ? n : hz(midi(n) + shift), +(len || 1)];
+  });
+  // Bass line from chord names, one chord per half bar (4 eighths): 'walk' = root/fifth, 'drive' = octave eighths
+  const ROOT = { C: 'C3', D: 'D3', E: 'E2', F: 'F2', G: 'G2', A: 'A2', Bb: 'Bb2', B: 'B2' };
+  const bass = (chords, style) => chords.split(/\s+/).flatMap(c => {
+    const r = midi(ROOT[c.replace('m', '')]);
+    return style === 'walk' ? [[hz(r), 2], [hz(r + 7), 2]] : [[hz(r), 1], [hz(r + 12), 1], [hz(r), 1], [hz(r + 12), 1]];
+  });
+  const drums = (bar, bars) => seq(Array(bars).fill(bar).join(' '));
+
+  const SONGS = {
+    map: { tempo: 132, loop: true, voices: [
+      { wave: 'pulse', vol: .5, notes: seq('C5 E5 G5 E5 F5:2 A5:2 | G5 E5 C5 E5 D5:4 | C5 E5 G5 C6 B5:2 A5:2 | G5 F5 E5 D5 C5:4 | A5:2 G5 F5 E5:2 C5:2 | F5:2 E5 D5 C5:2 A4:2 | G4 C5 E5 G5 A5:2 G5:2 | F5 E5 D5 E5 C5:4') },
+      { wave: 'triangle', vol: .9, notes: bass('C F C G C F G C F C F Am C F G C', 'walk') },
+      { drum: true, vol: .5, notes: drums('k - h - s - h -', 8) } ] },
+    battle: { tempo: 168, loop: true, voices: [
+      { wave: 'pulse', vol: .5, notes: seq('A4 A4 C5 A4 E5 A4 D5 C5 | A4 A4 C5 A4 G5:2 E5:2 | F4 F4 A4 F4 C5 F4 B4 A4 | G4 G4 B4 G4 D5:2 B4:2 | A5:2 G5 E5 C5:2 E5:2 | F5:2 E5 C5 A4:2 C5:2 | D5:2 C5 B4 G4:2 B4:2 | E5:2 G#5:2 B5:2 E5:2') },
+      { wave: 'triangle', vol: .9, notes: bass('Am Am Am Am F F G G Am Am F F G G E E', 'drive') },
+      { drum: true, vol: .6, notes: drums('k h s h k k s h', 8) } ] },
+    boss: { tempo: 184, loop: true, voices: [
+      { wave: 'pulse', vol: .5, notes: seq('D5 D5 F5 D5 A5:2 G#5:2 | D5 D5 F5 D5 C6:2 A5:2 | Bb4 Bb4 D5 Bb4 F5:2 E5:2 | C5 C5 E5 C5 G5:2 E5:2 | D6:2 C6 A5 F5:2 A5:2 | Bb5:2 A5 F5 D5:2 F5:2 | E5:2 F5 G5 A5:2 G5:2 | A5:2 C#6:2 E6:2 A5:2') },
+      { wave: 'triangle', vol: .9, notes: bass('Dm Dm Dm Dm Bb Bb C C Dm Dm Bb Bb C C A A', 'drive') },
+      { drum: true, vol: .7, notes: drums('k h s k k h s s', 8) } ] },
+    victory: { tempo: 160, voices: [
+      { wave: 'pulse', vol: .55, notes: seq('G4 C5 E5 G5:3 E5 G5:9 | F5 E5 D5 F5 E5:2 D5:2 C5:8') },
+      { wave: 'triangle', vol: .9, notes: seq('C3:4 G3:4 C3:4 G3:4 | G2:4 B2:4 C3:8') } ] },
+    caught: { tempo: 180, voices: [
+      { wave: 'pulse', vol: .55, notes: seq('C5 E5 G5 C6:2 G5 C6:6') },
+      { wave: 'triangle', vol: .9, notes: seq('C3:4 G2:2 C3:6') } ] },
+    levelup: { tempo: 220, voices: [
+      { wave: 'pulse', vol: .55, notes: seq('C5 E5 G5 C6 E6:4') },
+      { wave: 'triangle', vol: .9, notes: seq('C3:8') } ] },
+    evolving: { tempo: 200, loop: true, voices: [
+      { wave: 'pulse', vol: .45, notes: seq('C5 G5 C6 G5 D5 A5 D6 A5 E5 B5 E6 B5 F5 C6 F6 C6') },
+      { wave: 'triangle', vol: .9, notes: seq('C3:4 D3:4 E3:4 F3:4') } ] },
+    evolved: { tempo: 160, voices: [
+      { wave: 'pulse', vol: .55, notes: seq('C5 E5 G5 C6 E5 G5 C6 E6 G6:8') },
+      { wave: 'triangle', vol: .9, notes: seq('C3:8 C3:8') } ] },
+    lose: { tempo: 100, voices: [
+      { wave: 'pulse', vol: .5, notes: seq('E5:2 D#5:2 D5:2 C#5:2 C5:8') },
+      { wave: 'triangle', vol: .9, notes: seq('A2:8 E2:8') } ] },
+  };
+
+  function init() {
+    if (ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ctx = new AC();
+    const master = ctx.createGain(); master.gain.value = .5; master.connect(ctx.destination);
+    musicBus = ctx.createGain(); musicBus.gain.value = .35; musicBus.connect(master);
+    sfxBus = ctx.createGain(); sfxBus.gain.value = .6; sfxBus.connect(master);
+    // 25 % pulse wave, the classic Game Boy lead sound
+    const N = 32, real = new Float32Array(N), imag = new Float32Array(N);
+    for (let n = 1; n < N; n++) real[n] = 2 / (n * Math.PI) * Math.sin(n * Math.PI * .25);
+    pulse = ctx.createPeriodicWave(real, imag);
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+
+  function tone(dest, wave, f, t, dur, vol, f2) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    if (wave === 'pulse') o.setPeriodicWave(pulse); else o.type = wave;
+    o.frequency.setValueAtTime(f, t);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + .005);
+    g.gain.setValueAtTime(vol, t + dur * .8);
+    g.gain.linearRampToValueAtTime(0, t + dur);
+    o.connect(g); g.connect(dest);
+    o.start(t); o.stop(t + dur + .02);
+  }
+
+  function noise(dest, t, dur, vol, type, freq, freq2) {
+    const src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    src.buffer = noiseBuf;
+    f.type = type; f.frequency.setValueAtTime(freq, t);
+    if (freq2) f.frequency.exponentialRampToValueAtTime(freq2, t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(.001, t + dur);
+    src.connect(f); f.connect(g); g.connect(dest);
+    src.start(t); src.stop(t + dur + .02);
+  }
+
+  function drum(dest, kind, t, vol) {
+    if (kind === 'k') tone(dest, 'sine', 150, t, .12, vol, 40);
+    else if (kind === 's') noise(dest, t, .12, vol * .6, 'bandpass', 1800);
+    else if (kind === 'h') noise(dest, t, .04, vol * .3, 'highpass', 7000);
+  }
+
+  // Schedules notes a little ahead of time; all voices restart together when a looping song ends
+  function play(name) {
+    const song = SONGS[name], bus = ctx.createGain();
+    bus.connect(musicBus);
+    const eighth = 60 / song.tempo / 2;
+    const length = Math.max(...song.voices.map(v => v.notes.reduce((a, n) => a + n[1], 0)));
+    let start = ctx.currentTime + .05;
+    const pos = song.voices.map(() => ({ i: 0, at: 0 }));
+    const p = { name, bus, timer: null };
+    p.timer = setInterval(() => {
+      const horizon = ctx.currentTime + .2;
+      while (true) {
+        let busy = false;
+        song.voices.forEach((v, k) => {
+          const st = pos[k];
+          while (st.i < v.notes.length && start + st.at * eighth < horizon) {
+            const [f, len] = v.notes[st.i], t = start + st.at * eighth;
+            if (v.drum) drum(bus, f, t, v.vol);
+            else if (f !== '-') tone(bus, v.wave, f, t, len * eighth * .95, v.vol * .3);
+            st.at += len; st.i++;
+          }
+          if (st.i < v.notes.length) busy = true;
+        });
+        if (busy) break;
+        if (start + length * eighth > horizon) break;
+        if (!song.loop) { stopPlayer(p, false); if (wanted === name) wanted = null; return; }
+        start += length * eighth;
+        pos.forEach(st => { st.i = 0; st.at = 0; });
+      }
+    }, 25);
+    return p;
+  }
+
+  function stopPlayer(p, fade = true) {
+    if (!p) return;
+    clearInterval(p.timer);
+    if (fade) {
+      p.bus.gain.setValueAtTime(p.bus.gain.value, ctx.currentTime);
+      p.bus.gain.linearRampToValueAtTime(0, ctx.currentTime + .08);
+    }
+    setTimeout(() => p.bus.disconnect(), 2000);
+    if (player === p) player = null;
+  }
+
+  // Switch to a song (or null for silence); the same looping song keeps playing without restarting
+  function music(name) {
+    if (player && player.name === name && SONGS[name].loop) return;
+    wanted = name;
+    stopPlayer(player);
+    if (name && ctx && settings.music) player = play(name);
+  }
+
+  const SFX = {
+    blip: t => tone(sfxBus, 'pulse', 1320, t, .04, .25),
+    select: t => { tone(sfxBus, 'pulse', 660, t, .05, .25); tone(sfxBus, 'pulse', 990, t + .05, .06, .25); },
+    attack: t => { tone(sfxBus, 'square', 300, t, .12, .2, 900); noise(sfxBus, t, .08, .3, 'highpass', 3000); },
+    hit: t => { noise(sfxBus, t, .18, .7, 'lowpass', 1500, 300); tone(sfxBus, 'square', 180, t, .15, .25, 60); },
+    wrong: t => { tone(sfxBus, 'square', 220, t, .12, .25); tone(sfxBus, 'square', 160, t + .13, .22, .25); },
+    hurt: t => noise(sfxBus, t, .25, .7, 'lowpass', 900, 200),
+    appear: t => { tone(sfxBus, 'square', 200, t, .25, .2, 1200); noise(sfxBus, t, .25, .25, 'bandpass', 500, 4000); },
+    faint: t => tone(sfxBus, 'square', 600, t, .7, .25, 80),
+    throw: t => { noise(sfxBus, t, .45, .4, 'bandpass', 600, 5000); tone(sfxBus, 'triangle', 400, t, .4, .3, 1200); },
+    wobble: t => { tone(sfxBus, 'square', 300, t, .05, .2); noise(sfxBus, t, .05, .3, 'bandpass', 2000); },
+    click: t => { tone(sfxBus, 'pulse', 1200, t, .03, .3); tone(sfxBus, 'pulse', 1800, t + .04, .06, .3); },
+  };
+  function sfx(name) { if (ctx && settings.sfx && ctx.state === 'running') SFX[name](ctx.currentTime + .01); }
+
+  // Browsers only allow audio after a tap or key press
+  function unlock() {
+    init();
+    if (!ctx) return;
+    ctx.resume();
+    if (wanted && !player && settings.music && SONGS[wanted].loop) player = play(wanted);
+  }
+  ['pointerdown', 'keydown', 'touchend'].forEach(e => document.addEventListener(e, unlock, { capture: true }));
+  // Pause everything while the tab is hidden
+  document.addEventListener('visibilitychange', () => { if (ctx) document.hidden ? ctx.suspend() : ctx.resume(); });
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(settings)); } catch (e) {} }
+  function toggle(kind) {
+    settings[kind] = !settings[kind]; save();
+    if (kind === 'music') {
+      if (!settings.music) { const w = wanted; stopPlayer(player); wanted = w; }
+      else if (ctx && wanted && SONGS[wanted].loop) player = play(wanted);
+    }
+    return settings[kind];
+  }
+  return { music, sfx, toggle, get settings() { return settings; } };
+})();
+</script>
 <script>
 // Monster wins after GOAL correct answers (its HP), you lose after MAX_HP wrong answers
 const GOAL = 20, MAX_HP = 20, HOUR = 60 * 60 * 1000, SAVE_KEY = 'matte-tabellmonster';
@@ -241,6 +439,7 @@ function professorSays() {
 }
 
 function renderMap() {
+  Sound.music('map');
   $('profText').textContent = professorSays();
   $('openDex').textContent = '📖 Monsterdex (' + caughtCount() + '/' + MONSTERS.length + ')';
   const path = $('path');
@@ -344,7 +543,7 @@ function waitThen(fn, ms) {
   $('textbox').classList.add('wait');
   later(run, ms);
 }
-function skip() { if (pending) pending(); }
+function skip() { if (pending) { Sound.sfx('blip'); pending(); } }
 
 function stopFight() {
   fightId++; pending = null; locked = true;
@@ -370,6 +569,7 @@ function startFight(m) {
   $('menu').innerHTML = ''; $('question').textContent = '';
   show('game');
   animate($('bossSprite'), 'enter');
+  Sound.music(m.boss ? 'boss' : 'battle'); Sound.sfx('appear');
   say(isCaught(m) ? m.name + ' wants a rematch!'
     : m.boss ? 'The ground is shaking... The legendary ' + m.name + ' awakens!'
     : 'A wild ' + m.name + ' appeared at ' + m.place + '!');
@@ -412,11 +612,11 @@ function choose(btn, v) {
     const p = partner();
     $('question').textContent = '';
     say((p ? form(p).name : 'YOU') + ' used ' + (p ? form(p).move : pick(HERO_ATTACKS)) + '! ' + question + ' = ' + answer + ". It's super effective!");
-    animate($('heroSprite'), 'attack');
-    later(() => { animate($('bossSprite'), 'hit'); updateBars(); }, 300);
+    animate($('heroSprite'), 'attack'); Sound.sfx('attack');
+    later(() => { animate($('bossSprite'), 'hit'); Sound.sfx('hit'); updateBars(); }, 300);
     if (bossHp <= 0) {
       $('flee').style.display = 'none';
-      later(() => { $('bossSprite').classList.add('fainted'); $('menu').innerHTML = ''; say(foe.name + ' fainted!'); }, 1400);
+      later(() => { $('bossSprite').classList.add('fainted'); $('menu').innerHTML = ''; say(foe.name + ' fainted!'); Sound.sfx('faint'); Sound.music('victory'); }, 1400);
       later(() => waitThen(win, 4000), 1500);
     } else later(() => waitThen(nextQuestion, 5000), 600);
   } else {
@@ -424,12 +624,13 @@ function choose(btn, v) {
     btn.disabled = true;
     heroHp--; errors++;
     say('Wrong! ' + foe.name + ' used ' + foe.move + '! Try again:');
-    animate($('bossSprite'), 'attack');
-    later(() => { animate($('heroSprite'), 'hit'); animate($('arena'), 'flash'); updateBars(); }, 300);
+    animate($('bossSprite'), 'attack'); Sound.sfx('wrong');
+    later(() => { animate($('heroSprite'), 'hit'); Sound.sfx('hurt'); animate($('arena'), 'flash'); updateBars(); }, 300);
     if (heroHp <= 0) {
       later(() => {
         const p = partner();
         $('heroSprite').classList.add('fainted');
+        Sound.sfx('faint'); Sound.music('lose');
         $('question').textContent = '';
         $('menu').innerHTML = '';
         say((p ? form(p).name + ' is too tired to go on!' : 'You fainted!') + ' ' + foe.name + ' won this time... Practise and try again!');
@@ -457,14 +658,17 @@ function win() {
   const evolved = old && isEvolved(m) && before !== form(m);
   const sprite = $('bossSprite'), steps = [];
   if (firstCatch) {
-    steps.push(() => { say('You threw a MATHS BALL!'); $('ball').className = 'throw'; return 2500; });
-    steps.push(() => { $('ball').className = 'done'; say('Gotcha! ' + m.name + " was caught! It's now in your Monsterdex."); return 5000; });
+    steps.push(() => { say('You threw a MATHS BALL!'); $('ball').className = 'throw'; Sound.sfx('throw');
+      [900, 1400, 1900].forEach(ms => later(() => { if ($('ball').className === 'throw') Sound.sfx('wobble'); }, ms));
+      return 2500; });
+    steps.push(() => { $('ball').className = 'done'; Sound.sfx('click'); Sound.music('caught'); say('Gotcha! ' + m.name + " was caught! It's now in your Monsterdex."); return 5000; });
   } else {
     steps.push(() => { say('You beat ' + m.name + ' again! Great practice!'); return 4000; });
   }
   steps.push(() => { say('Rating: ' + starText(stars) + ' (' + errors + ' ' + (errors === 1 ? 'mistake' : 'mistakes') + ')' + (old && stars > old.stars ? ' – new record!' : '.')); return 5000; });
   if (old) steps.push(() => {
     const left = EVOLVE_AT - winsOf(m);
+    Sound.music('levelup');
     say(before.name + ' grew to level ' + levelOf(m) + '!' + (m.evo && left > 0 ? ' It feels stronger... ' + left + ' more ' + (left === 1 ? 'win' : 'wins') + ' to go!' : ''));
     return 5000;
   });
@@ -472,11 +676,13 @@ function win() {
     steps.push(() => {
       $('ball').className = '';
       sprite.textContent = before.icon; sprite.classList.remove('fainted'); sprite.classList.add('evolving');
+      Sound.music('evolving');
       say('What? ' + before.name + ' is evolving!');
       return 3200;
     });
     steps.push(() => {
       sprite.classList.remove('evolving'); sprite.textContent = m.evo.icon; animate($('arena'), 'flash');
+      Sound.music('evolved');
       say('Congratulations! ' + before.name + ' evolved into ' + m.evo.name + '! It learned ' + m.evo.move + '!');
       return 6000;
     });
@@ -487,6 +693,7 @@ function win() {
 
 function startReward(m, firstCatch, evolved) {
   stopFight();
+  Sound.music(null);
   $('rewardIcon').textContent = form(m).icon;
   $('rewardTitle').textContent = evolved ? '🏆 ' + m.name + ' evolved into ' + m.evo.name + '!'
     : firstCatch ? (m.boss ? '🏆 You are the Times Table Master!' : '🏆 You caught ' + m.name + '!')
@@ -518,6 +725,15 @@ $('reset').onclick = () => {
   if (!confirm('Do you really want to release all your monsters and start over?')) return;
   state = { caught: {}, partner: null }; saveState(); renderMap();
 };
+document.addEventListener('click', e => { const b = e.target.closest('button'); if (b && !b.classList.contains('opt') && !b.closest('#audioBar')) Sound.sfx('select'); });
+function renderAudioBar() {
+  const { music, sfx } = Sound.settings;
+  $('musicBtn').textContent = '♪ Music'; $('musicBtn').setAttribute('aria-pressed', music);
+  $('sfxBtn').textContent = '🔊 Sounds'; $('sfxBtn').setAttribute('aria-pressed', sfx);
+}
+$('musicBtn').onclick = () => { Sound.toggle('music'); renderAudioBar(); };
+$('sfxBtn').onclick = () => { Sound.toggle('sfx'); renderAudioBar(); Sound.sfx('select'); };
+renderAudioBar();
 renderMap();
 </script>
 </body>
