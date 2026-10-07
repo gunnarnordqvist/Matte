@@ -7,4 +7,5 @@ Open `index.html` (or publish it with GitHub Pages: Settings → Pages → branc
 * Beaten monsters are caught in a Maths Ball and added to the Monsterdex, rated 1–3 stars depending on the number of mistakes. A caught monster can be chosen as the partner that battles for you.
 * You can practise the same table again: every new win gives the monster more levels and another chance at more stars, and after 3 wins it evolves into a new form (e.g. SIXCRAB → SIXLOBSTER).
 * Every battle won gives one hour of reward time.
+* Chiptune music (map, battle, boss, victory, catch, level-up, evolution) and sound effects are synthesised in the browser with the Web Audio API – no audio files. Sound starts after the first tap, and music and sounds can be switched off separately with the buttons at the top.
 * Progress is saved in the browser (localStorage) and can be reset from the Monsterdex.
