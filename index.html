@@ -96,6 +96,9 @@
   .fill.mid { background: var(--hp-mid); }
   .fill.low { background: var(--hp-low); }
   .hpnum { text-align: right; margin-top: .3em; }
+  .team { display: flex; gap: .15em; margin-top: .3em; font-size: 1.3em; line-height: 1; }
+  .team span { opacity: .35; }
+  .team span.on { opacity: 1; }
 
   /* Answer menu */
   #question { font-size: 1.4em; color: var(--dark); }
@@ -106,8 +109,6 @@
   .opt.right, .opt.right:disabled { background: var(--hp-ok); color: #fff; }
   .opt.wrong { background: var(--hp-low); color: #fff; text-decoration: line-through; }
   .opt:disabled { cursor: default; }
-  #choice { display: none; margin-top: .8em; gap: .6em; justify-content: center; }
-  #choice button { min-width: 6em; }
   #overlay { display: none; margin-top: .8em; gap: .6em; justify-content: center; flex-wrap: wrap; }
   #clock { font-size: 1.6em; margin: .6em 0; color: var(--mid); }
   #rewardIcon { font-size: 4em; line-height: 1.2; }
@@ -164,12 +165,12 @@
       <div class="info" id="heroInfo">
         <div class="name"><span id="heroName"></span><span id="heroLvl"></span></div>
         <div class="bar"><b>HP</b><div class="track"><div class="fill" id="heroHp"></div></div></div>
+        <div class="team" id="heroTeam" aria-hidden="true"></div>
         <div class="hpnum" id="heroHpNum"></div>
       </div>
     </div>
     <div class="textbox" id="textbox" aria-live="polite"><div id="message"></div><div id="question"></div><span id="next" aria-hidden="true">▼</span></div>
     <div id="menu"></div>
-    <div id="choice"><button id="yes">▶ YES</button><button id="no">NO</button></div>
     <div id="overlay"><button id="retry">▶ Try again</button><button id="giveUp">Back to map</button></div>
     <button id="flee" class="small">🏃 Run away</button>
   </div>
@@ -430,7 +431,7 @@ const starText = n => '★'.repeat(n) + '☆'.repeat(3 - n);
 // Fewer wrong answers in a won fight give more stars
 const starsFor = errors => errors <= 2 ? 3 : errors <= 6 ? 2 : 1;
 
-// Progress is kept in this browser only: caught monsters, best stars, wins and chosen partner
+// Progress is kept in this browser only: caught monsters, best stars, wins and the team leader
 function loadState() {
   try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && s.caught) return s; } catch (e) {}
   return { caught: {}, partner: null };
@@ -446,6 +447,8 @@ const isEvolved = m => !!m.evo && winsOf(m) >= EVOLVE_AT;
 const form = m => isEvolved(m) ? m.evo : m;
 const levelOf = m => m.lvl + Math.max(0, winsOf(m) - 1) * LVL_PER_WIN;
 const partner = () => state.partner && state.caught[state.partner] ? byId(state.partner) : null;
+// Every caught monster is in the team and they take turns to attack; the leader (state.partner) goes first
+const team = () => { const p = partner(); return p ? [p, ...MONSTERS.filter(m => m !== p && isCaught(m))] : []; };
 
 let timer = null;
 function show(view) {
@@ -493,7 +496,7 @@ function renderMap() {
 function renderDex() {
   const p = partner();
   $('dexText').textContent = 'MONSTERDEX: ' + caughtCount() + ' of ' + MONSTERS.length + ' caught. '
-    + (p ? 'Your partner is ' + form(p).name + '. Every win gives levels – after ' + EVOLVE_AT + ' wins a monster evolves!' : 'Catch a monster and it will become your partner in battle!');
+    + (p ? 'Your team of ' + team().length + ' takes turns to attack, led by ' + form(p).name + '. Every win gives levels – after ' + EVOLVE_AT + ' wins a monster evolves!' : 'Catch a monster and it will join your team!');
   const grid = $('dexGrid');
   grid.innerHTML = '';
   MONSTERS.forEach((m, i) => {
@@ -514,7 +517,7 @@ function renderDex() {
            : '<p>Lives at ' + m.place + '.</p>');
     if (c) {
       const b = document.createElement('button');
-      b.textContent = p === m ? '★ Partner' : 'Choose as partner';
+      b.textContent = p === m ? '★ Leader' : 'Make leader';
       b.disabled = p === m;
       b.onclick = () => { state.partner = m.id; saveState(); renderDex(); };
       card.appendChild(b);
@@ -527,6 +530,7 @@ function renderDex() {
 // ---------- Battle ----------
 let foe, tables = [], bossHp = GOAL, heroHp = MAX_HP, errors = 0;
 let answer = 0, question = '', locked = false, tableBag = [], factBags = {};
+let squad = [], turn = 0, fighter = null;
 // Timeouts belong to one fight; leaving or restarting cancels the pending ones
 let fightId = 0;
 const later = (fn, ms) => { const id = fightId; setTimeout(() => { if (id === fightId) fn(); }, ms); };
@@ -579,17 +583,14 @@ function startFight(m) {
   stopFight();
   foe = m; tables = m.tables; tableBag = []; factBags = {};
   bossHp = GOAL; heroHp = MAX_HP; errors = 0;
-  const p = partner();
+  squad = team(); turn = 0;
   $('bossName').textContent = m.name;
   $('bossLvl').textContent = ':L' + m.lvl;
   $('bossSprite').textContent = m.icon;
-  const pf = p && form(p);
-  $('heroSprite').textContent = p ? pf.icon : '🧒';
-  $('heroName').textContent = p ? pf.name : 'YOU';
-  $('heroLvl').textContent = ':L' + (p ? levelOf(p) : 10);
+  showFighter(squad[0] || null);
   $('bossSprite').classList.remove('fainted', 'evolving'); $('heroSprite').classList.remove('fainted');
   $('ball').className = '';
-  $('overlay').style.display = 'none'; $('choice').style.display = 'none'; $('flee').style.display = '';
+  $('overlay').style.display = 'none'; $('flee').style.display = '';
   updateBars();
   $('menu').innerHTML = ''; $('question').textContent = '';
   show('game');
@@ -599,11 +600,21 @@ function startFight(m) {
     : m.boss ? 'The ground is shaking... The legendary ' + m.name + ' awakens! It mixes ALL the tables: ' + ALL_TABLES.join(', ') + '!'
     : 'A wild ' + m.name + ' appeared at ' + m.place + '!');
   waitThen(() => {
-    if (!p) { nextQuestion(); return; }
-    say('Go, ' + pf.name + '!');
+    if (!fighter) { nextQuestion(); return; }
+    say(squad.length > 1 ? 'Go, team! ' + form(fighter).name + ' leads the way!' : 'Go, ' + form(fighter).name + '!');
     animate($('heroSprite'), 'enter');
     waitThen(nextQuestion, 2500);
   }, 4000);
+}
+
+// Put a team member (or the child, with no monsters yet) in front
+function showFighter(m) {
+  fighter = m;
+  const f = m && form(m);
+  $('heroSprite').textContent = m ? f.icon : '🧒';
+  $('heroName').textContent = m ? f.name : 'YOU';
+  $('heroLvl').textContent = ':L' + (m ? levelOf(m) : 10);
+  $('heroTeam').innerHTML = squad.length > 1 ? squad.map(t => '<span' + (t === m ? ' class="on"' : '') + '>' + form(t).icon + '</span>').join('') : '';
 }
 
 function nextQuestion() {
@@ -637,11 +648,14 @@ function choose(btn, v) {
     btn.classList.add('right');
     document.querySelectorAll('.opt').forEach(b => b.disabled = true);
     bossHp--;
-    const p = partner();
+    // Team members take turns: the next one steps in for each correct answer
+    const attacker = squad.length ? squad[turn++ % squad.length] : null, swap = attacker !== fighter;
+    if (swap) { showFighter(attacker); animate($('heroSprite'), 'enter'); }
+    const a = attacker && form(attacker), lag = swap ? 400 : 0;
     $('question').textContent = '';
-    say((p ? form(p).name : 'YOU') + ' used ' + (p ? form(p).move : pick(HERO_ATTACKS)) + '! ' + question + ' = ' + answer + ". It's super effective!");
-    animate($('heroSprite'), 'attack'); Sound.sfx('attack');
-    later(() => { animate($('bossSprite'), 'hit'); Sound.sfx('hit'); updateBars(); }, 300);
+    say((a ? a.name : 'YOU') + ' used ' + (a ? a.move : pick(HERO_ATTACKS)) + '! ' + question + ' = ' + answer + ". It's super effective!");
+    later(() => { animate($('heroSprite'), 'attack'); Sound.sfx('attack'); }, lag);
+    later(() => { animate($('bossSprite'), 'hit'); Sound.sfx('hit'); updateBars(); }, lag + 300);
     if (bossHp <= 0) {
       $('flee').style.display = 'none';
       later(() => { $('bossSprite').classList.add('fainted'); $('menu').innerHTML = ''; say(foe.name + ' fainted!'); Sound.sfx('faint'); Sound.music('victory'); }, 1400);
@@ -656,43 +670,31 @@ function choose(btn, v) {
     later(() => { animate($('heroSprite'), 'hit'); Sound.sfx('hurt'); animate($('arena'), 'flash'); updateBars(); }, 300);
     if (heroHp <= 0) {
       later(() => {
-        const p = partner();
         $('heroSprite').classList.add('fainted');
         Sound.sfx('faint'); Sound.music('lose');
         $('question').textContent = '';
         $('menu').innerHTML = '';
-        say((p ? form(p).name + ' is too tired to go on!' : 'You fainted!') + ' ' + foe.name + ' won this time... Practise and try again!');
+        say((squad.length > 1 ? 'Your team is too tired to go on!' : fighter ? form(fighter).name + ' is too tired to go on!' : 'You fainted!') + ' ' + foe.name + ' won this time... Practise and try again!');
         $('overlay').style.display = 'flex'; $('flee').style.display = 'none';
       }, 1200);
     } else later(() => { locked = false; }, 700);
   }
 }
 
-// Play messages one after another; each step returns how long to wait before moving on,
-// or returns nothing and calls next() itself (used for questions to the player)
+// Play messages one after another; each step returns how long to wait before moving on
 function sequence(steps, done) {
   const step = steps.shift();
   if (!step) { done(); return; }
-  const next = () => sequence(steps, done);
-  const ms = step(next);
-  if (ms) waitThen(next, ms);
-}
-
-// Ask a yes/no question in the text box
-function ask(msg, onYes, onNo) {
-  say(msg);
-  $('choice').style.display = 'flex';
-  $('yes').onclick = () => { $('choice').style.display = 'none'; onYes(); };
-  $('no').onclick = () => { $('choice').style.display = 'none'; onNo(); };
+  waitThen(() => sequence(steps, done), step());
 }
 
 // Record the win, then: throw the Maths Ball at new monsters, give stars, level up and maybe evolve
 function win() {
   const m = foe, stars = starsFor(errors), old = state.caught[m.id];
-  const firstCatch = !old, firstPartner = !partner();
+  const firstCatch = !old, firstMember = !partner();
   const before = old && form(m);
   state.caught[m.id] = { stars: Math.max(stars, old ? old.stars : 0), wins: (old ? old.wins : 0) + 1 };
-  if (firstPartner) state.partner = m.id;
+  if (firstMember) state.partner = m.id;
   saveState();
   const evolved = old && isEvolved(m) && before !== form(m);
   const sprite = $('bossSprite'), steps = [];
@@ -726,11 +728,11 @@ function win() {
       return 6000;
     });
   }
-  if (firstPartner) steps.push(() => { say(m.name + ' likes you! It will be your partner in the next battle.'); return 5000; });
-  // A newly caught monster can join the fight straight away
-  else if (firstCatch) steps.push(next => ask('Do you want ' + m.name + ' to battle for you from now on?',
-    () => { state.partner = m.id; saveState(); say(m.name + ' is your new partner!'); waitThen(next, 4000); },
-    () => { say(form(partner()).name + ' stays your partner. You can swap in the Monsterdex.'); waitThen(next, 4000); }));
+  if (firstCatch) steps.push(() => {
+    say(firstMember ? m.name + ' joined your team! It will battle for you in the next fight.'
+      : m.name + ' joined your team! Your ' + team().length + ' monsters will take turns to attack.');
+    return 5000;
+  });
   sequence(steps, () => startReward(m, firstCatch, evolved));
 }
 
