@@ -106,6 +106,8 @@
   .opt.right, .opt.right:disabled { background: var(--hp-ok); color: #fff; }
   .opt.wrong { background: var(--hp-low); color: #fff; text-decoration: line-through; }
   .opt:disabled { cursor: default; }
+  #choice { display: none; margin-top: .8em; gap: .6em; justify-content: center; }
+  #choice button { min-width: 6em; }
   #overlay { display: none; margin-top: .8em; gap: .6em; justify-content: center; flex-wrap: wrap; }
   #clock { font-size: 1.6em; margin: .6em 0; color: var(--mid); }
   #rewardIcon { font-size: 4em; line-height: 1.2; }
@@ -167,6 +169,7 @@
     </div>
     <div class="textbox" id="textbox" aria-live="polite"><div id="message"></div><div id="question"></div><span id="next" aria-hidden="true">▼</span></div>
     <div id="menu"></div>
+    <div id="choice"><button id="yes">▶ YES</button><button id="no">NO</button></div>
     <div id="overlay"><button id="retry">▶ Try again</button><button id="giveUp">Back to map</button></div>
     <button id="flee" class="small">🏃 Run away</button>
   </div>
@@ -196,7 +199,7 @@ const Sound = (() => {
     return [n === '-' || /^[ksh]$/.test(n) ? n : hz(midi(n) + shift), +(len || 1)];
   });
   // Bass line from chord names, one chord per half bar (4 eighths): 'walk' = root/fifth, 'drive' = octave eighths
-  const ROOT = { C: 'C3', D: 'D3', E: 'E2', F: 'F2', G: 'G2', A: 'A2', Bb: 'Bb2', B: 'B2' };
+  const ROOT = { C: 'C3', D: 'D3', E: 'E2', F: 'F2', 'F#': 'F#2', G: 'G2', Ab: 'Ab2', A: 'A2', Bb: 'Bb2', B: 'B2' };
   const bass = (chords, style) => chords.split(/\s+/).flatMap(c => {
     const r = midi(ROOT[c.replace('m', '')]);
     return style === 'walk' ? [[hz(r), 2], [hz(r + 7), 2]] : [[hz(r), 1], [hz(r + 12), 1], [hz(r), 1], [hz(r + 12), 1]];
@@ -208,14 +211,36 @@ const Sound = (() => {
       { wave: 'pulse', vol: .5, notes: seq('C5 E5 G5 E5 F5:2 A5:2 | G5 E5 C5 E5 D5:4 | C5 E5 G5 C6 B5:2 A5:2 | G5 F5 E5 D5 C5:4 | A5:2 G5 F5 E5:2 C5:2 | F5:2 E5 D5 C5:2 A4:2 | G4 C5 E5 G5 A5:2 G5:2 | F5 E5 D5 E5 C5:4') },
       { wave: 'triangle', vol: .9, notes: bass('C F C G C F G C F C F Am C F G C', 'walk') },
       { drum: true, vol: .5, notes: drums('k - h - s - h -', 8) } ] },
-    battle: { tempo: 168, loop: true, voices: [
-      { wave: 'pulse', vol: .5, notes: seq('A4 A4 C5 A4 E5 A4 D5 C5 | A4 A4 C5 A4 G5:2 E5:2 | F4 F4 A4 F4 C5 F4 B4 A4 | G4 G4 B4 G4 D5:2 B4:2 | A5:2 G5 E5 C5:2 E5:2 | F5:2 E5 C5 A4:2 C5:2 | D5:2 C5 B4 G4:2 B4:2 | E5:2 G#5:2 B5:2 E5:2') },
-      { wave: 'triangle', vol: .9, notes: bass('Am Am Am Am F F G G Am Am F F G G E E', 'drive') },
-      { drum: true, vol: .6, notes: drums('k h s h k k s h', 8) } ] },
-    boss: { tempo: 184, loop: true, voices: [
-      { wave: 'pulse', vol: .5, notes: seq('D5 D5 F5 D5 A5:2 G#5:2 | D5 D5 F5 D5 C6:2 A5:2 | Bb4 Bb4 D5 Bb4 F5:2 E5:2 | C5 C5 E5 C5 G5:2 E5:2 | D6:2 C6 A5 F5:2 A5:2 | Bb5:2 A5 F5 D5:2 F5:2 | E5:2 F5 G5 A5:2 G5:2 | A5:2 C#6:2 E6:2 A5:2') },
-      { wave: 'triangle', vol: .9, notes: bass('Dm Dm Dm Dm Bb Bb C C Dm Dm Bb Bb C C A A', 'drive') },
-      { drum: true, vol: .7, notes: drums('k h s k k h s s', 8) } ] },
+    // One battle theme per monster, each with its own key, tempo and groove
+    m6: { tempo: 150, loop: true, voices: [ // SIXCRAB – sunny calypso on the beach
+      { wave: 'pulse', vol: .5, notes: seq('F5 - A5 F5 - C6 A5 F5 | G5 - Bb5 G5 - D6:2 Bb5 | A5 - C6 A5 - F5 G5 A5 | G5 F5 E5 G5 F5:4 | D6 - C6 Bb5 - A5 G5 F5 | C6 - Bb5 A5 - G5 F5 E5 | F5 A5 C6 A5 Bb5 G5 E5 C5 | F5:2 C5:2 F5:4') },
+      { wave: 'triangle', vol: .9, notes: bass('F F Gm Gm F F C F Bb Bb C C F C F F', 'walk') },
+      { drum: true, vol: .6, notes: drums('k h s k - k s h', 8) } ] },
+    m7: { tempo: 138, loop: true, voices: [ // SEVENPILLAR – bouncy woodland stroll
+      { wave: 'pulse', vol: .5, notes: seq('G5 B5 D6 B5 G5 B5 D6:2 | C6 B5 A5 G5 A5:4 | E5 G5 B5 G5 E5 G5 B5:2 | A5 G5 F#5 E5 D5:4 | G5:2 A5 B5 C6:2 B5 A5 | B5:2 A5 G5 A5:2 D5:2 | E5 F#5 G5 A5 B5 C6 D6 B5 | A5:2 F#5:2 G5:4') },
+      { wave: 'triangle', vol: .9, notes: bass('G G C D Em Em D D G C G D C G D G', 'walk') },
+      { drum: true, vol: .45, notes: drums('k - h h s - h -', 8) } ] },
+    m8: { tempo: 156, loop: true, voices: [ // OCTOINK – rippling arpeggios on the lake
+      { wave: 'pulse', vol: .45, notes: seq('E5 G5 B5 E6 B5 G5 E5 G5 | C5 E5 G5 C6 G5 E5 C5 E5 | D5 F#5 A5 D6 A5 F#5 D5 F#5 | B4 D#5 F#5 B5 F#5 D#5 B4:2 | E6:3 D6 B5:2 G5:2 | C6:3 B5 G5:2 E5:2 | A5:3 G5 F#5:2 D5:2 | B5:2 A5:2 G5:2 F#5:2') },
+      { wave: 'triangle', vol: .9, notes: bass('Em Em C C D D B B Em Em C C D D B B', 'walk') },
+      { drum: true, vol: .5, notes: drums('k - h - k s h -', 8) } ] },
+    m9: { tempo: 144, loop: true, voices: [ // NINELIVES – sneaky tiptoeing cat
+      { wave: 'pulse', vol: .5, notes: seq('D5 - F5 - A5 G#5 A5 - | D5 - F5 - Bb5 A5 G5 - | C5 - E5 - G5 F#5 G5 - | A4 C#5 E5 G5 F5 E5 D5 C#5 | D6 - C6 - Bb5 - A5 - | G5 - F5 - E5 - D5 - | Bb4 D5 F5 Bb5 A5 F5 D5 F5 | E5 C#5 A4 C#5 D5:4') },
+      { wave: 'triangle', vol: .9, notes: bass('Dm Dm Dm Gm C C A A Bb Bb Gm Gm Bb Bb A Dm', 'walk') },
+      { drum: true, vol: .5, notes: drums('k - s - k h s -', 8) } ] },
+    m12: { tempo: 120, loop: true, voices: [ // DOZENTROLL – heavy stomping in the caves
+      { wave: 'pulse', vol: .55, notes: seq('C4:2 C4 Eb4 F4:2 Eb4 C4 | G4:2 F4 Eb4 F4:4 | C4:2 C4 Eb4 G4:2 Bb4 G4 | Ab4:2 G4 F4 G4:4 | C5:2 Bb4 Ab4 G4:2 F4 Eb4 | F4:2 Eb4 D4 C4:4 | Ab4 Ab4 G4 G4 F4 F4 Eb4 Eb4 | D4:2 G4:2 C4:4') },
+      { wave: 'triangle', vol: .9, notes: bass('Cm Cm G Fm Cm Cm Ab G Ab Ab Fm Cm Ab Fm G Cm', 'drive') },
+      { drum: true, vol: .8, notes: drums('k k s - k k s s', 8) } ] },
+    m13: { tempo: 112, loop: true, voices: [ // SPOOKTEEN – creepy castle corridors
+      { wave: 'pulse', vol: .45, notes: seq('B4 D5 F5 B5 Bb5:4 | A5 F#5 D5 A4 B4:4 | G4 B4 D5 G5 F#5:4 | E5 C#5 A#4 C#5 F#4:4 | B5 - A#5 - A5 - G#5 - | G5 - F#5 - F5 - E5 - | D5 E5 F5 E5 D5 C#5 C5 A#4 | B4:2 F#4:2 B3:4') },
+      { wave: 'triangle', vol: .9, notes: bass('Bm Bm D Bm G G F# F# Bm Bm Em Em G F# Bm Bm', 'walk') },
+      { drum: true, vol: .5, notes: drums('k - - h s - - h', 8) } ] },
+    boss: { tempo: 184, loop: true, voices: [ // TIMESDRAGON – two-part boss theme
+      { wave: 'pulse', vol: .5, notes: seq('D5 D5 F5 D5 A5:2 G#5:2 | D5 D5 F5 D5 C6:2 A5:2 | Bb4 Bb4 D5 Bb4 F5:2 E5:2 | C5 C5 E5 C5 G5:2 E5:2 | D6:2 C6 A5 F5:2 A5:2 | Bb5:2 A5 F5 D5:2 F5:2 | E5:2 F5 G5 A5:2 G5:2 | A5:2 C#6:2 E6:2 A5:2'
+        + ' | F5 F5 A5 F5 C6:2 Bb5:2 | G5 G5 Bb5 G5 D6:2 C6:2 | A5 A5 C#6 A5 E6:2 D6:2 | C#6 A5 E5 A5 C#6:4 | D6 A5 F5 D5 D6 A5 F5 D5 | Bb5 F5 D5 Bb4 Bb5 F5 D5 Bb4 | G5 E5 C5 G4 A5 E5 C#5 A4 | D5:2 F5:2 A5:2 D6:2') },
+      { wave: 'triangle', vol: .9, notes: bass('Dm Dm Dm Dm Bb Bb C C Dm Dm Bb Bb C C A A F F Gm Gm A A A A Dm Dm Bb Bb C A Dm Dm', 'drive') },
+      { drum: true, vol: .7, notes: drums('k h s k k h s s', 16) } ] },
     victory: { tempo: 160, voices: [
       { wave: 'pulse', vol: .55, notes: seq('G4 C5 E5 G5:3 E5 G5:9 | F5 E5 D5 F5 E5:2 D5:2 C5:8') },
       { wave: 'triangle', vol: .9, notes: seq('C3:4 G3:4 C3:4 G3:4 | G2:4 B2:4 C3:8') } ] },
@@ -501,7 +526,7 @@ function renderDex() {
 
 // ---------- Battle ----------
 let foe, tables = [], bossHp = GOAL, heroHp = MAX_HP, errors = 0;
-let answer = 0, question = '', locked = false;
+let answer = 0, question = '', locked = false, tableBag = [], factBags = {};
 // Timeouts belong to one fight; leaving or restarting cancels the pending ones
 let fightId = 0;
 const later = (fn, ms) => { const id = fightId; setTimeout(() => { if (id === fightId) fn(); }, ms); };
@@ -552,7 +577,7 @@ function stopFight() {
 
 function startFight(m) {
   stopFight();
-  foe = m; tables = m.tables;
+  foe = m; tables = m.tables; tableBag = []; factBags = {};
   bossHp = GOAL; heroHp = MAX_HP; errors = 0;
   const p = partner();
   $('bossName').textContent = m.name;
@@ -564,14 +589,14 @@ function startFight(m) {
   $('heroLvl').textContent = ':L' + (p ? levelOf(p) : 10);
   $('bossSprite').classList.remove('fainted', 'evolving'); $('heroSprite').classList.remove('fainted');
   $('ball').className = '';
-  $('overlay').style.display = 'none'; $('flee').style.display = '';
+  $('overlay').style.display = 'none'; $('choice').style.display = 'none'; $('flee').style.display = '';
   updateBars();
   $('menu').innerHTML = ''; $('question').textContent = '';
   show('game');
   animate($('bossSprite'), 'enter');
-  Sound.music(m.boss ? 'boss' : 'battle'); Sound.sfx('appear');
+  Sound.music(m.boss ? 'boss' : 'm' + m.id); Sound.sfx('appear');
   say(isCaught(m) ? m.name + ' wants a rematch!'
-    : m.boss ? 'The ground is shaking... The legendary ' + m.name + ' awakens!'
+    : m.boss ? 'The ground is shaking... The legendary ' + m.name + ' awakens! It mixes ALL the tables: ' + ALL_TABLES.join(', ') + '!'
     : 'A wild ' + m.name + ' appeared at ' + m.place + '!');
   waitThen(() => {
     if (!p) { nextQuestion(); return; }
@@ -583,7 +608,10 @@ function startFight(m) {
 
 function nextQuestion() {
   locked = false;
-  const t = pick(tables), n = 1 + rnd(10);
+  if (!tableBag.length) tableBag = shuffle([...tables]);
+  const t = tableBag.pop();
+  if (!factBags[t] || !factBags[t].length) factBags[t] = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  const n = factBags[t].pop();
   answer = t * n;
   question = t + ' × ' + n;
   say('What is');
@@ -640,11 +668,22 @@ function choose(btn, v) {
   }
 }
 
-// Play messages one after another; each step returns how long to wait before moving on
+// Play messages one after another; each step returns how long to wait before moving on,
+// or returns nothing and calls next() itself (used for questions to the player)
 function sequence(steps, done) {
   const step = steps.shift();
   if (!step) { done(); return; }
-  waitThen(() => sequence(steps, done), step());
+  const next = () => sequence(steps, done);
+  const ms = step(next);
+  if (ms) waitThen(next, ms);
+}
+
+// Ask a yes/no question in the text box
+function ask(msg, onYes, onNo) {
+  say(msg);
+  $('choice').style.display = 'flex';
+  $('yes').onclick = () => { $('choice').style.display = 'none'; onYes(); };
+  $('no').onclick = () => { $('choice').style.display = 'none'; onNo(); };
 }
 
 // Record the win, then: throw the Maths Ball at new monsters, give stars, level up and maybe evolve
@@ -688,6 +727,10 @@ function win() {
     });
   }
   if (firstPartner) steps.push(() => { say(m.name + ' likes you! It will be your partner in the next battle.'); return 5000; });
+  // A newly caught monster can join the fight straight away
+  else if (firstCatch) steps.push(next => ask('Do you want ' + m.name + ' to battle for you from now on?',
+    () => { state.partner = m.id; saveState(); say(m.name + ' is your new partner!'); waitThen(next, 4000); },
+    () => { say(form(partner()).name + ' stays your partner. You can swap in the Monsterdex.'); waitThen(next, 4000); }));
   sequence(steps, () => startReward(m, firstCatch, evolved));
 }
 
