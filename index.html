@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en-GB">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Matteträning – Tabellmonster</title>
+<title>Times Tables – Table Monsters</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root { --dark: #0f380f; --mid: #306230; --light: #8bac0f; --pale: #e8f0d0; --hp-ok: #38b048; --hp-mid: #f0c020; --hp-low: #e03828; --gold: #d89000; }
   * { box-sizing: border-box; }
-  body { font-family: 'Pixelify Sans', ui-monospace, monospace; font-weight: 500; font-size: 22px; background: #20242a; color: var(--dark); margin: 0; padding: 1em; text-align: center; line-height: 1.5; }
-  h1 { color: var(--light); font-size: 1.6em; font-weight: 700; margin: .3em 0 .8em; }
+  body { font-family: 'Press Start 2P', ui-monospace, monospace; font-size: 17px; background: #20242a; color: var(--dark); margin: 0; padding: 1em; text-align: center; line-height: 1.6; }
+  h1 { color: var(--light); font-size: 1.3em; font-weight: 400; margin: .3em 0 .8em; }
   .screen { max-width: 34em; margin: 0 auto; background: var(--pale); border: 4px solid var(--dark); border-radius: .4em; box-shadow: 0 0 0 4px var(--pale), 0 0 0 8px var(--dark); padding: 1em; }
   button { font-family: inherit; font-size: .8em; padding: .8em 1.2em; border: 3px solid var(--dark); border-radius: .3em; background: #fff; color: var(--dark); cursor: pointer; }
   button:focus-visible { background: var(--light); outline: none; }
@@ -46,15 +46,16 @@
   .place { font-size: .85em; color: var(--mid); }
 
   /* Monsterdex */
-  #dexGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(8em, 1fr)); gap: .6em; margin: 1em 0; }
-  .card { background: #fff; border: 3px solid var(--dark); border-radius: .3em; padding: .7em .5em; font-size: .7em; line-height: 1.5; }
+  #dexGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(12em, 1fr)); gap: .6em; margin: 1em 0; }
+  .card { background: #fff; border: 3px solid var(--dark); border-radius: .3em; padding: .7em .5em; font-size: .75em; line-height: 1.6; }
   .card.caught { border-color: var(--gold); }
   .card.partner { box-shadow: 0 0 0 3px var(--gold); }
   .card .icon { font-size: 4em; line-height: 1.1; }
   .card p { margin: .4em 0; color: var(--mid); }
   .card button { font-size: 1em; padding: .5em .6em; margin-top: .3em; }
   .card .evo { color: var(--dark); }
-  .card .evo .track { display: block; height: .7em; margin-top: .3em; }
+  .card .evo .track, .card .evo .fill { display: block; }
+  .card .evo .track { height: .7em; margin-top: .3em; }
   #reset { background: none; border: none; color: #708070; text-decoration: underline; font-size: .55em; }
 
   /* Arena */
@@ -96,7 +97,7 @@
   /* Answer menu */
   #question { font-size: 1.4em; color: var(--dark); }
   #menu { display: grid; grid-template-columns: repeat(5, 1fr); gap: .4em; margin-top: .8em; }
-  .opt { position: relative; padding: .9em 0; font-size: .85em; }
+  .opt { position: relative; padding: .6em 0; font-size: 1.1em; }
   .opt:focus-visible::before { content: '▶'; position: absolute; left: .2em; font-size: .7em; top: 50%; transform: translateY(-50%); }
   @media (hover: hover) { .opt:hover:not(:disabled)::before { content: '▶'; position: absolute; left: .2em; font-size: .7em; top: 50%; transform: translateY(-50%); } }
   .opt.right, .opt.right:disabled { background: var(--hp-ok); color: #fff; }
@@ -119,10 +120,10 @@
   @keyframes blink { 50% { opacity: 0; } }
   @keyframes flash { 30% { background: #fff; filter: invert(1); } }
   @media (max-width: 30em) {
-    body { padding: .5em; font-size: 19px; }
+    body { padding: .5em; font-size: 12.5px; }
     .screen { padding: .6em; }
     #menu { gap: .3em; }
-    .opt { font-size: .75em; }
+    .opt { font-size: 1em; }
     .sprite { font-size: 3.6em; }
     .node { width: 88%; }
   }
@@ -130,7 +131,7 @@
 </style>
 </head>
 <body>
-<h1>⚔ Tabellmonster ⚔</h1>
+<h1>⚔ Table Monsters ⚔</h1>
 <div class="screen">
   <div id="map" class="view on">
     <div class="textbox" id="professor"><span class="face" aria-hidden="true">👴</span><span id="profText"></span></div>
@@ -141,8 +142,8 @@
   <div id="dex" class="view">
     <div class="textbox" id="dexText"></div>
     <div id="dexGrid"></div>
-    <button id="closeDex">◀ Till kartan</button>
-    <p><button id="reset">Börja om från början</button></p>
+    <button id="closeDex">◀ Back to map</button>
+    <p><button id="reset">Start over from the beginning</button></p>
   </div>
 
   <div id="game" class="view">
@@ -162,16 +163,16 @@
     </div>
     <div class="textbox" id="textbox" aria-live="polite"><div id="message"></div><div id="question"></div><span id="next" aria-hidden="true">▼</span></div>
     <div id="menu"></div>
-    <div id="overlay"><button id="retry">▶ Försök igen</button><button id="giveUp">Till kartan</button></div>
-    <button id="flee" class="small">🏃 Fly till kartan</button>
+    <div id="overlay"><button id="retry">▶ Try again</button><button id="giveUp">Back to map</button></div>
+    <button id="flee" class="small">🏃 Run away</button>
   </div>
 
   <div id="reward" class="view">
     <div id="rewardIcon" aria-hidden="true"></div>
     <h2 id="rewardTitle" style="font-size:1em"></h2>
-    <p style="font-size:.7em">Tid kvar av belöningen:</p>
+    <p style="font-size:.7em">Time left on your reward:</p>
     <div id="clock"></div>
-    <button id="rewardBack" class="small">◀ Till kartan</button>
+    <button id="rewardBack" class="small">◀ Back to map</button>
   </div>
 </div>
 <script>
@@ -180,23 +181,23 @@ const GOAL = 20, MAX_HP = 20, HOUR = 60 * 60 * 1000, SAVE_KEY = 'matte-tabellmon
 const ALL_TABLES = [6, 7, 8, 9, 12, 13];
 // One monster per table along the quest route; the dragon at the end uses every table
 const MONSTERS = [
-  { id: '6', tables: [6], name: 'SEXKRABBA', icon: '🦀', move: 'KLOKLIPP', lvl: 12, place: 'Sexstranden', desc: 'Går sidledes längs stranden och nyper den som räknar fel.',
-    evo: { name: 'SEXHUMMER', icon: '🦞', move: 'JÄTTEKLO', desc: 'Klorna har vuxit sig så stora att den kan knipa två svar på en gång.' } },
-  { id: '7', tables: [7], name: 'SJULARV', icon: '🐛', move: 'TRÅDSKOTT', lvl: 17, place: 'Sjuskogen', desc: 'Kryper runt i sjuans tabell och äter upp fel svar.',
-    evo: { name: 'SJUFJÄRIL', icon: '🦋', move: 'VINGVIND', desc: 'Har puppat sig och fladdrar nu över hela Sjuskogen.' } },
-  { id: '8', tables: [8], name: 'ÅTTABLÄCK', icon: '🐙', move: 'BLÄCKSPRUT', lvl: 22, place: 'Åttasjön', desc: 'Åtta armar – en för varje svar den vill sno åt sig.',
-    evo: { name: 'ÅTTAKRAKEN', icon: '🦑', move: 'VIRVELSTORM', desc: 'Härskar i djupet av Åttasjön. Blir starkare för varje åtta du räknar.' } },
-  { id: '9', tables: [9], name: 'NIOKATT', icon: '🐱', move: 'KLÖSATTACK', lvl: 27, place: 'Nioberget', desc: 'Har nio liv – och ett knep för varje.',
-    evo: { name: 'NIOTIGER', icon: '🐯', move: 'TIGERSPRÅNG', desc: 'Kissen har vuxit till en tiger som springer upp för Nioberget på nio sekunder.' } },
-  { id: '12', tables: [12], name: 'TOLVTROLL', icon: '👹', move: 'KLUBBSLAG', lvl: 34, place: 'Tolvgrottan', desc: 'Kastar stenar ett dussin åt gången.',
-    evo: { name: 'TOLVJÄTTE', icon: '👺', move: 'JORDSKALV', desc: 'Så stor att Tolvgrottan blivit för trång. Stampar fram tolv jordskalv.' } },
-  { id: '13', tables: [13], name: 'TRETTONSPÖKE', icon: '👻', move: 'SKRÄMSKRIK', lvl: 41, place: 'Trettonslottet', desc: 'Spökar i slottet – och värst är det fredag den trettonde.',
-    evo: { name: 'TRETTONVAMPYR', icon: '🧛', move: 'NATTFLADDER', desc: 'Vaknar vid midnatt och räknar till tretton innan den slår till.' } },
-  { id: 'drake', tables: ALL_TABLES, name: 'TABELLDRAKE', icon: '🐉', move: 'ELDIG GÅNGER', lvl: 60, place: 'Drakens topp', desc: 'Den legendariska härskaren över alla tabeller.', boss: true },
+  { id: '6', tables: [6], name: 'SIXCRAB', icon: '🦀', move: 'PINCH', lvl: 12, place: 'Sixsand Beach', desc: 'Scuttles sideways along the beach and pinches anyone who gets a sum wrong.',
+    evo: { name: 'SIXLOBSTER', icon: '🦞', move: 'GIANT CLAW', desc: 'Its claws have grown so big it can grab two answers at once.' } },
+  { id: '7', tables: [7], name: 'SEVENPILLAR', icon: '🐛', move: 'SILK SHOT', lvl: 17, place: 'Seven Woods', desc: 'Crawls through the seven times table, munching up wrong answers.',
+    evo: { name: 'SEVENWING', icon: '🦋', move: 'WING GUST', desc: 'It has left its cocoon and now flutters all over Seven Woods.' } },
+  { id: '8', tables: [8], name: 'OCTOINK', icon: '🐙', move: 'INK SPRAY', lvl: 22, place: 'Lake Eight', desc: 'Eight arms – one for every answer it wants to snatch.',
+    evo: { name: 'OCTOKRAKEN', icon: '🦑', move: 'WHIRLPOOL', desc: 'Rules the depths of Lake Eight. Grows stronger with every eight you count.' } },
+  { id: '9', tables: [9], name: 'NINELIVES', icon: '🐱', move: 'SCRATCH', lvl: 27, place: 'Mount Nine', desc: 'Has nine lives – and a trick for each one.',
+    evo: { name: 'NINETIGER', icon: '🐯', move: 'TIGER POUNCE', desc: 'The kitten has grown into a tiger that races up Mount Nine in nine seconds.' } },
+  { id: '12', tables: [12], name: 'DOZENTROLL', icon: '👹', move: 'CLUB SMASH', lvl: 34, place: 'Dozen Caves', desc: 'Throws rocks a dozen at a time.',
+    evo: { name: 'DOZENGIANT', icon: '👺', move: 'EARTHQUAKE', desc: 'Too big for the Dozen Caves now. Stamps out twelve earthquakes in a row.' } },
+  { id: '13', tables: [13], name: 'SPOOKTEEN', icon: '👻', move: 'SCARY SHRIEK', lvl: 41, place: 'Castle Thirteen', desc: 'Haunts the castle – and is at its worst on Friday the thirteenth.',
+    evo: { name: 'VAMPTEEN', icon: '🧛', move: 'NIGHT FLIGHT', desc: 'Wakes at midnight and counts to thirteen before it strikes.' } },
+  { id: 'drake', tables: ALL_TABLES, name: 'TIMESDRAGON', icon: '🐉', move: 'TIMES FLAME', lvl: 60, place: "Dragon's Peak", desc: 'The legendary ruler of all the times tables.', boss: true },
 ];
 // Every win levels a caught monster up; after EVOLVE_AT wins it evolves into its next form
 const EVOLVE_AT = 3, LVL_PER_WIN = 3;
-const HERO_ATTACKS = ['GÅNGERSLAG', 'SIFFERSPARK', 'TABELLSTORM', 'PRODUKTBLIXT'];
+const HERO_ATTACKS = ['TIMES STRIKE', 'NUMBER KICK', 'TABLE STORM', 'PRODUCT BOLT'];
 
 const $ = id => document.getElementById(id);
 const rnd = n => Math.floor(Math.random() * n);
@@ -233,10 +234,10 @@ function show(view) {
 function professorSays() {
   const n = MONSTERS.filter(m => !m.boss && isCaught(m)).length;
   const next = MONSTERS.find((m, i) => !isCaught(m) && isOpen(m, i));
-  if (n === 0) return 'PROFESSOR GÅNGER: Hjälp! Tabellmonster har tagit över Gångerlandet. Besegra dem och fånga dem i din Matteboll. Börja vid Sexstranden!';
-  if (next && !next.boss) return 'Bra jobbat! Du har fångat ' + n + ' av 6 tabellmonster. Nästa mål: ' + next.place + '.';
-  if (next) return 'Alla sex fångade! Nu väntar TABELLDRAKEN på Drakens topp. Den använder ALLA tabeller – är du redo?';
-  return 'Du är TABELLMÄSTARE! Utmana monstren igen och försök få ★★★ på alla.';
+  if (n === 0) return 'PROFESSOR TIMES: Help! Table monsters have taken over Timesland. Beat them and catch them in your Maths Ball. Start at Sixsand Beach!';
+  if (next && !next.boss) return 'Well done! You have caught ' + n + ' of 6 table monsters. Next stop: ' + next.place + '.';
+  if (next) return "All six caught! Now the TIMESDRAGON awaits on Dragon's Peak. It uses ALL the tables – are you ready?";
+  return 'You are the TIMES TABLE MASTER! Challenge the monsters again and try to get ★★★ on all of them.';
 }
 
 function renderMap() {
@@ -251,13 +252,13 @@ function renderMap() {
     b.className = 'node' + (caught ? ' caught' : '') + (open ? '' : ' locked') + (m.boss ? ' boss' : '');
     if (open && !caught && !nextMarked) { b.classList.add('next'); nextMarked = true; }
     b.disabled = !open;
-    const what = m.boss ? 'Alla tabeller' : 'Tabell ' + m.tables[0];
+    const what = m.boss ? 'All tables' : 'Table ' + m.tables[0];
     const f = form(m);
     b.innerHTML = '<span class="icon' + (caught ? '' : ' sil') + '" aria-hidden="true">' + f.icon + '</span><span>'
       + '<span class="place">' + m.place + '</span><br>' + what + '<br>'
-      + (caught ? f.name + ' :L' + levelOf(m) + '<br><span class="stars">' + starText(state.caught[m.id].stars) + '</span> Träna igen!' : open ? '???<br>Tryck för att slåss!' : '🔒 Låst')
+      + (caught ? f.name + ' :L' + levelOf(m) + '<br><span class="stars">' + starText(state.caught[m.id].stars) + '</span> Train again!' : open ? '???<br>Tap to battle!' : '🔒 Locked')
       + '</span>';
-    b.setAttribute('aria-label', m.place + ', ' + what + (caught ? ', ' + f.name + ' fångad' : open ? ', okänt monster' : ', låst'));
+    b.setAttribute('aria-label', m.place + ', ' + what + (caught ? ', ' + f.name + ' caught' : open ? ', unknown monster' : ', locked'));
     b.onclick = () => startFight(m);
     path.appendChild(b);
   });
@@ -267,29 +268,29 @@ function renderMap() {
 // ---------- Monsterdex ----------
 function renderDex() {
   const p = partner();
-  $('dexText').textContent = 'MONSTERDEX: ' + caughtCount() + ' av ' + MONSTERS.length + ' fångade. '
-    + (p ? 'Din partner är ' + form(p).name + '. Varje vinst ger nivåer – efter ' + EVOLVE_AT + ' vinster utvecklas monstret!' : 'Fånga ett monster så blir det din partner i striderna!');
+  $('dexText').textContent = 'MONSTERDEX: ' + caughtCount() + ' of ' + MONSTERS.length + ' caught. '
+    + (p ? 'Your partner is ' + form(p).name + '. Every win gives levels – after ' + EVOLVE_AT + ' wins a monster evolves!' : 'Catch a monster and it will become your partner in battle!');
   const grid = $('dexGrid');
   grid.innerHTML = '';
   MONSTERS.forEach((m, i) => {
     const c = state.caught[m.id];
     const card = document.createElement('div');
     card.className = 'card' + (c ? ' caught' : '') + (p === m ? ' partner' : '');
-    const what = m.boss ? 'Alla tabeller' : 'Tabell ' + m.tables[0];
+    const what = m.boss ? 'All tables' : 'Table ' + m.tables[0];
     const f = form(m);
     let growth = '';
     if (c && m.evo && !isEvolved(m)) {
       const left = EVOLVE_AT - c.wins;
-      growth = '<p class="evo"><span class="sil" aria-hidden="true">' + m.evo.icon + '</span> Utvecklas om ' + left + ' ' + (left === 1 ? 'vinst' : 'vinster')
+      growth = '<p class="evo"><span class="sil" aria-hidden="true">' + m.evo.icon + '</span> Evolves in ' + left + ' ' + (left === 1 ? 'win' : 'wins')
         + '<span class="track"><span class="fill" style="width:' + (100 * c.wins / EVOLVE_AT) + '%"></span></span></p>';
-    } else if (c) growth = '<p class="evo">' + (m.boss ? 'Legendarisk!' : 'Fullt utvecklad!') + '</p>';
+    } else if (c) growth = '<p class="evo">' + (m.boss ? 'Legendary!' : 'Fully evolved!') + '</p>';
     card.innerHTML = '<div class="icon' + (c ? '' : ' sil') + '" aria-hidden="true">' + f.icon + '</div>'
       + '<b>#' + (i + 1) + ' ' + (c ? f.name : '???') + '</b><br>' + what + (c ? ' · :L' + levelOf(m) : '')
-      + (c ? '<br><span class="stars">' + starText(c.stars) + '</span><p>' + f.desc + '</p>Besegrad ' + c.wins + ' ' + (c.wins === 1 ? 'gång' : 'gånger') + growth
-           : '<p>Bor vid ' + m.place + '.</p>');
+      + (c ? '<br><span class="stars">' + starText(c.stars) + '</span><p>' + f.desc + '</p>Beaten ' + c.wins + ' ' + (c.wins === 1 ? 'time' : 'times') + growth
+           : '<p>Lives at ' + m.place + '.</p>');
     if (c) {
       const b = document.createElement('button');
-      b.textContent = p === m ? '★ Partner' : 'Välj som partner';
+      b.textContent = p === m ? '★ Partner' : 'Choose as partner';
       b.disabled = p === m;
       b.onclick = () => { state.partner = m.id; saveState(); renderDex(); };
       card.appendChild(b);
@@ -360,7 +361,7 @@ function startFight(m) {
   $('bossSprite').textContent = m.icon;
   const pf = p && form(p);
   $('heroSprite').textContent = p ? pf.icon : '🧒';
-  $('heroName').textContent = p ? pf.name : 'DU';
+  $('heroName').textContent = p ? pf.name : 'YOU';
   $('heroLvl').textContent = ':L' + (p ? levelOf(p) : 10);
   $('bossSprite').classList.remove('fainted', 'evolving'); $('heroSprite').classList.remove('fainted');
   $('ball').className = '';
@@ -369,12 +370,12 @@ function startFight(m) {
   $('menu').innerHTML = ''; $('question').textContent = '';
   show('game');
   animate($('bossSprite'), 'enter');
-  say(isCaught(m) ? m.name + ' vill ha revansch!'
-    : m.boss ? 'Marken skakar... Den legendariska ' + m.name + ' vaknar!'
-    : 'En vild ' + m.name + ' dyker upp vid ' + m.place + '!');
+  say(isCaught(m) ? m.name + ' wants a rematch!'
+    : m.boss ? 'The ground is shaking... The legendary ' + m.name + ' awakens!'
+    : 'A wild ' + m.name + ' appeared at ' + m.place + '!');
   waitThen(() => {
     if (!p) { nextQuestion(); return; }
-    say('Kör, ' + pf.name + '!');
+    say('Go, ' + pf.name + '!');
     animate($('heroSprite'), 'enter');
     waitThen(nextQuestion, 2500);
   }, 4000);
@@ -385,7 +386,7 @@ function nextQuestion() {
   const t = pick(tables), n = 1 + rnd(10);
   answer = t * n;
   question = t + ' × ' + n;
-  say('Vad blir');
+  say('What is');
   $('question').textContent = question + ' = ?';
   const opts = new Set([answer]);
   // Distractors: neighbouring products in the same table, then nearby numbers
@@ -410,19 +411,19 @@ function choose(btn, v) {
     bossHp--;
     const p = partner();
     $('question').textContent = '';
-    say((p ? form(p).name : 'DU') + ' använder ' + (p ? form(p).move : pick(HERO_ATTACKS)) + '! ' + question + ' = ' + answer + '. Det är supereffektivt!');
+    say((p ? form(p).name : 'YOU') + ' used ' + (p ? form(p).move : pick(HERO_ATTACKS)) + '! ' + question + ' = ' + answer + ". It's super effective!");
     animate($('heroSprite'), 'attack');
     later(() => { animate($('bossSprite'), 'hit'); updateBars(); }, 300);
     if (bossHp <= 0) {
       $('flee').style.display = 'none';
-      later(() => { $('bossSprite').classList.add('fainted'); $('menu').innerHTML = ''; say(foe.name + ' svimmade!'); }, 1400);
+      later(() => { $('bossSprite').classList.add('fainted'); $('menu').innerHTML = ''; say(foe.name + ' fainted!'); }, 1400);
       later(() => waitThen(win, 4000), 1500);
     } else later(() => waitThen(nextQuestion, 5000), 600);
   } else {
     btn.classList.add('wrong');
     btn.disabled = true;
     heroHp--; errors++;
-    say('Fel! ' + foe.name + ' använder ' + foe.move + '! Försök igen:');
+    say('Wrong! ' + foe.name + ' used ' + foe.move + '! Try again:');
     animate($('bossSprite'), 'attack');
     later(() => { animate($('heroSprite'), 'hit'); animate($('arena'), 'flash'); updateBars(); }, 300);
     if (heroHp <= 0) {
@@ -431,7 +432,7 @@ function choose(btn, v) {
         $('heroSprite').classList.add('fainted');
         $('question').textContent = '';
         $('menu').innerHTML = '';
-        say((p ? form(p).name + ' orkar inte mer!' : 'Du svimmade!') + ' ' + foe.name + ' vann den här gången... Öva och försök igen!');
+        say((p ? form(p).name + ' is too tired to go on!' : 'You fainted!') + ' ' + foe.name + ' won this time... Practise and try again!');
         $('overlay').style.display = 'flex'; $('flee').style.display = 'none';
       }, 1200);
     } else later(() => { locked = false; }, 700);
@@ -445,7 +446,7 @@ function sequence(steps, done) {
   waitThen(() => sequence(steps, done), step());
 }
 
-// Record the win, then: throw the Matteboll at new monsters, give stars, level up and maybe evolve
+// Record the win, then: throw the Maths Ball at new monsters, give stars, level up and maybe evolve
 function win() {
   const m = foe, stars = starsFor(errors), old = state.caught[m.id];
   const firstCatch = !old, firstPartner = !partner();
@@ -456,40 +457,40 @@ function win() {
   const evolved = old && isEvolved(m) && before !== form(m);
   const sprite = $('bossSprite'), steps = [];
   if (firstCatch) {
-    steps.push(() => { say('Du kastar en MATTEBOLL!'); $('ball').className = 'throw'; return 2500; });
-    steps.push(() => { $('ball').className = 'done'; say('Hurra! ' + m.name + ' fångades! Den finns nu i din Monsterdex.'); return 5000; });
+    steps.push(() => { say('You threw a MATHS BALL!'); $('ball').className = 'throw'; return 2500; });
+    steps.push(() => { $('ball').className = 'done'; say('Gotcha! ' + m.name + " was caught! It's now in your Monsterdex."); return 5000; });
   } else {
-    steps.push(() => { say('Du besegrade ' + m.name + ' igen! Bra tränat!'); return 4000; });
+    steps.push(() => { say('You beat ' + m.name + ' again! Great practice!'); return 4000; });
   }
-  steps.push(() => { say('Betyg: ' + starText(stars) + ' (' + errors + ' fel)' + (old && stars > old.stars ? ' – nytt rekord!' : '.')); return 5000; });
+  steps.push(() => { say('Rating: ' + starText(stars) + ' (' + errors + ' ' + (errors === 1 ? 'mistake' : 'mistakes') + ')' + (old && stars > old.stars ? ' – new record!' : '.')); return 5000; });
   if (old) steps.push(() => {
     const left = EVOLVE_AT - winsOf(m);
-    say(before.name + ' gick upp till nivå ' + levelOf(m) + '!' + (m.evo && left > 0 ? ' Den känns starkare... ' + left + ' ' + (left === 1 ? 'vinst' : 'vinster') + ' till!' : ''));
+    say(before.name + ' grew to level ' + levelOf(m) + '!' + (m.evo && left > 0 ? ' It feels stronger... ' + left + ' more ' + (left === 1 ? 'win' : 'wins') + ' to go!' : ''));
     return 5000;
   });
   if (evolved) {
     steps.push(() => {
       $('ball').className = '';
       sprite.textContent = before.icon; sprite.classList.remove('fainted'); sprite.classList.add('evolving');
-      say('Vad händer? ' + before.name + ' utvecklas!');
+      say('What? ' + before.name + ' is evolving!');
       return 3200;
     });
     steps.push(() => {
       sprite.classList.remove('evolving'); sprite.textContent = m.evo.icon; animate($('arena'), 'flash');
-      say('Grattis! ' + before.name + ' utvecklades till ' + m.evo.name + '! Den lärde sig ' + m.evo.move + '!');
+      say('Congratulations! ' + before.name + ' evolved into ' + m.evo.name + '! It learned ' + m.evo.move + '!');
       return 6000;
     });
   }
-  if (firstPartner) steps.push(() => { say(m.name + ' gillar dig! Den blir din partner i nästa strid.'); return 5000; });
+  if (firstPartner) steps.push(() => { say(m.name + ' likes you! It will be your partner in the next battle.'); return 5000; });
   sequence(steps, () => startReward(m, firstCatch, evolved));
 }
 
 function startReward(m, firstCatch, evolved) {
   stopFight();
   $('rewardIcon').textContent = form(m).icon;
-  $('rewardTitle').textContent = evolved ? '🏆 ' + m.name + ' utvecklades till ' + m.evo.name + '!'
-    : firstCatch ? (m.boss ? '🏆 Du är Tabellmästare!' : '🏆 Du fångade ' + m.name + '!')
-    : '🏆 ' + form(m).name + ' nådde nivå ' + levelOf(m) + '!';
+  $('rewardTitle').textContent = evolved ? '🏆 ' + m.name + ' evolved into ' + m.evo.name + '!'
+    : firstCatch ? (m.boss ? '🏆 You are the Times Table Master!' : '🏆 You caught ' + m.name + '!')
+    : '🏆 ' + form(m).name + ' reached level ' + levelOf(m) + '!';
   const end = Date.now() + HOUR;
   show('reward');
   const tick = () => {
@@ -514,7 +515,7 @@ $('rewardBack').onclick = leaveReward;
 $('openDex').onclick = renderDex;
 $('closeDex').onclick = renderMap;
 $('reset').onclick = () => {
-  if (!confirm('Vill du verkligen släppa alla monster och börja om?')) return;
+  if (!confirm('Do you really want to release all your monsters and start over?')) return;
   state = { caught: {}, partner: null }; saveState(); renderMap();
 };
 renderMap();
