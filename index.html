@@ -213,6 +213,18 @@ const Sound = (() => {
       { wave: 'triangle', vol: .9, notes: bass('C F C G C F G C F C F Am C F G C', 'walk') },
       { drum: true, vol: .5, notes: drums('k - h - s - h -', 8) } ] },
     // One battle theme per monster, each with its own key, tempo and groove
+    m3: { tempo: 160, loop: true, voices: [ // TRICHICK – jolly farmyard hoedown
+      { wave: 'pulse', vol: .5, notes: seq('G5 G5 E5 C5 E5 G5 C6:2 | A5 A5 F5 D5 F5 A5 C6:2 | G5 G5 E5 C5 D5 E5 F5 D5 | E5 D5 C5 B4 C5:4 | E5 E5 F5 G5 A5:2 G5:2 | F5 F5 E5 D5 E5:2 C5:2 | D5 E5 F5 D5 G5 F5 E5 D5 | C5:2 G4:2 C5:4') },
+      { wave: 'triangle', vol: .9, notes: bass('C C F F C C G C C F F C G G C C', 'walk') },
+      { drum: true, vol: .55, notes: drums('k h s h k h s h', 8) } ] },
+    m4: { tempo: 126, loop: true, voices: [ // FOURSPROUT – gentle swing in the meadow
+      { wave: 'pulse', vol: .5, notes: seq('A5:3 C6 A5:2 F5:2 | G5:3 Bb5 G5:2 E5:2 | F5:3 A5 C6:2 D6:2 | C6 Bb5 A5 G5 F5:4 | D6:3 C6 Bb5:2 A5:2 | C6:3 Bb5 A5:2 G5:2 | Bb5 A5 G5 F5 E5 G5 C6:2 | F5:2 A5:2 F5:4') },
+      { wave: 'triangle', vol: .9, notes: bass('F F C C F F C F Bb Bb F F C C F F', 'walk') },
+      { drum: true, vol: .45, notes: drums('k - h - s - h h', 8) } ] },
+    m5: { tempo: 172, loop: true, voices: [ // FIVESTAR – sparkling arpeggios under the stars
+      { wave: 'pulse', vol: .45, notes: seq('D5 F#5 A5 D6 A5 F#5 D6:2 | E5 G5 B5 E6 B5 G5 E6:2 | F#5 A5 D6 F#6 E6 D6 C#6 B5 | A5:2 E5:2 A5:4 | B5 D6 B5 G5 A5 C#6 A5 F#5 | G5 B5 G5 E5 F#5 A5 F#5 D5 | E5 F#5 G5 A5 B5 C#6 D6 E6 | D6:2 A5:2 D5:4') },
+      { wave: 'triangle', vol: .9, notes: bass('D D Em Em D D A A G A Em D A A D D', 'walk') },
+      { drum: true, vol: .5, notes: drums('k h h s k h h s', 8) } ] },
     m6: { tempo: 150, loop: true, voices: [ // SIXCRAB – sunny calypso on the beach
       { wave: 'pulse', vol: .5, notes: seq('F5 - A5 F5 - C6 A5 F5 | G5 - Bb5 G5 - D6:2 Bb5 | A5 - C6 A5 - F5 G5 A5 | G5 F5 E5 G5 F5:4 | D6 - C6 Bb5 - A5 G5 F5 | C6 - Bb5 A5 - G5 F5 E5 | F5 A5 C6 A5 Bb5 G5 E5 C5 | F5:2 C5:2 F5:4') },
       { wave: 'triangle', vol: .9, notes: bass('F F Gm Gm F F C F Bb Bb C C F C F F', 'walk') },
@@ -402,9 +414,15 @@ const Sound = (() => {
 <script>
 // Monster wins after GOAL correct answers (its HP), you lose after MAX_HP wrong answers
 const GOAL = 20, MAX_HP = 20, HOUR = 60 * 60 * 1000, SAVE_KEY = 'matte-tabellmonster';
-const ALL_TABLES = [6, 7, 8, 9, 12, 13];
+const ALL_TABLES = [3, 4, 5, 6, 7, 8, 9, 12, 13];
 // One monster per table along the quest route; the dragon at the end uses every table
 const MONSTERS = [
+  { id: '3', tables: [3], name: 'TRICHICK', icon: '🐣', move: 'PECK', lvl: 5, place: 'Triple Farm', desc: 'Hatched from an egg with three spots. Pecks at wrong answers.',
+    evo: { name: 'TRIROOSTER', icon: '🐓', move: 'CROW CALL', desc: 'Wakes the whole farm at three o\'clock sharp with a mighty crow.' } },
+  { id: '4', tables: [4], name: 'FOURSPROUT', icon: '🌱', move: 'LEAF CUT', lvl: 7, place: 'Clover Meadow', desc: 'A little sprout with four lucky leaves.',
+    evo: { name: 'FOURTREE', icon: '🌳', move: 'ROOT SLAM', desc: 'Has grown into a mighty tree with four great branches.' } },
+  { id: '5', tables: [5], name: 'FIVESTAR', icon: '⭐', move: 'STAR SPIN', lvl: 9, place: 'Five Star Hill', desc: 'A cheeky star with five points. Twinkles when you get a sum right.',
+    evo: { name: 'FIVESHINE', icon: '🌟', move: 'SHOOTING STAR', desc: 'Shines so brightly it lights up the whole night sky.' } },
   { id: '6', tables: [6], name: 'SIXCRAB', icon: '🦀', move: 'PINCH', lvl: 12, place: 'Sixsand Beach', desc: 'Scuttles sideways along the beach and pinches anyone who gets a sum wrong.',
     evo: { name: 'SIXLOBSTER', icon: '🦞', move: 'GIANT CLAW', desc: 'Its claws have grown so big it can grab two answers at once.' } },
   { id: '7', tables: [7], name: 'SEVENPILLAR', icon: '🐛', move: 'SILK SHOT', lvl: 17, place: 'Seven Woods', desc: 'Crawls through the seven times table, munching up wrong answers.',
@@ -440,7 +458,7 @@ let state = loadState();
 function saveState() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {} }
 const isCaught = m => !!state.caught[m.id];
 const caughtCount = () => MONSTERS.filter(isCaught).length;
-const isOpen = (m, i) => m.boss ? MONSTERS.every(o => o.boss || isCaught(o)) : i === 0 || isCaught(MONSTERS[i - 1]);
+const isOpen = (m, i) => isCaught(m) || (m.boss ? MONSTERS.every(o => o.boss || isCaught(o)) : i === 0 || isCaught(MONSTERS[i - 1]));
 const winsOf = m => state.caught[m.id] ? state.caught[m.id].wins : 0;
 const isEvolved = m => !!m.evo && winsOf(m) >= EVOLVE_AT;
 // Name, icon, move and description of the form the player owns
@@ -460,9 +478,10 @@ function show(view) {
 function professorSays() {
   const n = MONSTERS.filter(m => !m.boss && isCaught(m)).length;
   const next = MONSTERS.find((m, i) => !isCaught(m) && isOpen(m, i));
-  if (n === 0) return 'PROFESSOR TIMES: Help! Table monsters have taken over Timesland. Beat them and catch them in your Maths Ball. Start at Sixsand Beach!';
-  if (next && !next.boss) return 'Well done! You have caught ' + n + ' of 6 table monsters. Next stop: ' + next.place + '.';
-  if (next) return "All six caught! Now the TIMESDRAGON awaits on Dragon's Peak. It uses ALL the tables – are you ready?";
+  const total = MONSTERS.filter(m => !m.boss).length;
+  if (n === 0) return 'PROFESSOR TIMES: Help! Table monsters have taken over Timesland. Beat them and catch them in your Maths Ball. Start at ' + MONSTERS[0].place + '!';
+  if (next && !next.boss) return 'Well done! You have caught ' + n + ' of ' + total + ' table monsters. Next stop: ' + next.place + '.';
+  if (next) return 'All ' + total + " caught! Now the TIMESDRAGON awaits on Dragon's Peak. It uses ALL the tables – are you ready?";
   return 'You are the TIMES TABLE MASTER! Challenge the monsters again and try to get ★★★ on all of them.';
 }
 

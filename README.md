@@ -2,7 +2,7 @@
 ## Times Tables – Table Monsters
 Open `index.html` (or publish it with GitHub Pages: Settings → Pages → branch, root). A quest in the style of the classic Pokémon games for practising the times tables.
 
-* The map of Timesland has one monster per table: SIXCRAB (6), SEVENPILLAR (7), OCTOINK (8), NINELIVES (9), DOZENTROLL (12) and SPOOKTEEN (13). The next place unlocks once the previous monster has been caught. At the end, the TIMESDRAGON mixes all the tables evenly.
+* The map of Timesland has one monster per table: TRICHICK (3), FOURSPROUT (4), FIVESTAR (5), SIXCRAB (6), SEVENPILLAR (7), OCTOINK (8), NINELIVES (9), DOZENTROLL (12) and SPOOKTEEN (13). The next place unlocks once the previous monster has been caught. At the end, the TIMESDRAGON mixes all the tables evenly.
 * Every correct answer damages the monster – 20 correct answers beat it. Every wrong answer damages you – after 20 wrong answers you faint and can try again.
 * Beaten monsters are caught in a Maths Ball and added to the Monsterdex, rated 1–3 stars depending on the number of mistakes. Every caught monster joins your team, and the team members take turns to attack (sharing 20 HP). The leader who goes first can be chosen in the Monsterdex.
 * You can practise the same table again: every new win gives the monster more levels and another chance at more stars, and after 3 wins it evolves into a new form (e.g. SIXCRAB → SIXLOBSTER).
